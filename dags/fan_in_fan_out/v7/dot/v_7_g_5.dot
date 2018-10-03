@@ -1,0 +1,12 @@
+digraph{
+  rankdir=LR
+  node [shape=circle,fixedsize=true,width=.26]
+  edge [penwidth=0.75,arrowsize=0.5]
+  6 -> {}
+  5 -> {}
+  4 -> {}
+  3 -> {5 6}
+  2 -> {3 4}
+  1 -> {2}
+  0 -> {1}
+}

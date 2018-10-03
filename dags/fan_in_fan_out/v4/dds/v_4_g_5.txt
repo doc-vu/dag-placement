@@ -1,0 +1,5 @@
+process;subscription;publication
+v_4_g_5_v0;;v_4_g_5_e01
+v_4_g_5_v1;v_4_g_5_e01;v_4_g_5_e12,v_4_g_5_e13
+v_4_g_5_v2;v_4_g_5_e12;
+v_4_g_5_v3;v_4_g_5_e13;
