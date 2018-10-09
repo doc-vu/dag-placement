@@ -3,3 +3,12 @@ __pycache__/
 [Bb]in
 [Ii]nclude
 [Ll]ib
+/.gradle/
+/build/
+.gradle/
+build/
+.settings/
+.classpath
+.project
+libs/
+log

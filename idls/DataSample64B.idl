@@ -1,0 +1,6 @@
+struct DataSample64B {
+        long source_id;
+	long sample_id;
+	long long ts_milisec;
+	long payload[12];
+};
