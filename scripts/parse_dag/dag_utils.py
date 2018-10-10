@@ -8,6 +8,12 @@ def find_incoming_rate_for_vertex(vertex,dag,selectivity,rate):
       return sum([selectivity[x]*compute(x) for x in indeg])
   return compute(vertex)
 
+def find_incoming_rate(dag,selectivity,rate):
+  vcount=dag.shape[0]
+  incoming_rate=[find_incoming_rate_for_vertex(v,dag,selectivity,rate) \
+    for v in range(vcount)]
+  return incoming_rate
+
 def find_all_paths_for_vertex(vertex,dag):
   def compute(v):
     out_deg=np.nonzero(dag[v,:])[0]
@@ -30,12 +36,3 @@ def find_all_paths(dag):
     for p in find_all_paths_for_vertex(v,dag):
       paths.append(p)
   return paths
-
-adj=np.array([[0,1,1,0,0],\
-[0,0,1,1,0],\
-[0,0,0,1,0],\
-[0,0,0,0,1],\
-[0,0,0,0,0]]
-)
-selectivity=[.5,2,4,5,1]
-print(find_all_paths(adj))
