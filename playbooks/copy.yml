@@ -1,0 +1,7 @@
+---
+- hosts: all
+  gather_facts: False
+  tasks:
+    - name: copy remote files
+      synchronize: src={{src_dir}} dest={{dest_dir}} mode=pull
+      ignore_errors: true

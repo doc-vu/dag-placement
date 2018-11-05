@@ -1,0 +1,17 @@
+---
+- hosts: all
+  gather_facts: False
+  vars:
+    - scripts_dir: /home/riaps/workspace/dag-placement/scripts 
+    - log_dir: /home/riaps/workspace/dag-placement/log
+    - detachedMode: true 
+  tasks:
+    - name: print mode of operation
+      debug: msg={{ detachedMode }}
+    - name: start vertex (attached)
+      shell: '{{ scripts_dir }}/run_vertex.sh {{ graph_id }} {{ vertex_description }} {{ publication_rate }} {{ execution_interval }} {{ log_dir}} {{ processing_interval }}'
+      when: not {{ detachedMode | bool }}
+
+    - name: start vertex (detached)
+      shell: 'nohup {{ scripts_dir }}/run_vertex.sh {{ graph_id }} "{{ vertex_description }}" {{ publication_rate }} {{ execution_interval }} {{ log_dir}} {{ processing_interval }} &'
+      when: detachedMode

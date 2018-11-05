@@ -1,0 +1,2 @@
+bbb-96af ansible_ssh_host=172.21.20.49
+bbb-6302 ansible_ssh_host=172.21.20.54

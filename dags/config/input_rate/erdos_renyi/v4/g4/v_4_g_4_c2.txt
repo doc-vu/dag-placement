@@ -1,0 +1,5 @@
+vertex;subscription;publication;selectivity;input_rate;sinks
+v_4_g_4_v0;v_4_g_4_e10;;1.000000;0.250000;1
+v_4_g_4_v1;v_4_g_4_e21;v_4_g_4_e10;0.500000;0.500000;1
+v_4_g_4_v2;v_4_g_4_e32;v_4_g_4_e21;0.500000;1.000000;1
+v_4_g_4_v3;;v_4_g_4_e32;1.000000;1.000000;1

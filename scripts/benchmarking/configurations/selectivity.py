@@ -14,7 +14,7 @@ def combinations(selectivity,vertices):
   return patterns
 
 if __name__=="__main__":
-  for vcount in range(4,9):
+  for vcount in range(2,3):
     patterns=combinations(['.5','1'],vcount)
     with open('dags/config/selectivity/v%d'%(vcount),'w') as f:
       for p in patterns:
