@@ -13,3 +13,4 @@ build/
 libs/
 log
 share/
+pip-selfcheck.json
