@@ -11,18 +11,18 @@ runs=[1,2,3]
 processing_intervals=[-1,1,5,10,20]
 publication_rates=[1,5,10,20,40]
 execution_interval=300
-local_log_dir='/home/kharesp/workspace/python/dag-placement/log/v2'
-plots_dir='/home/kharesp/workspace/python/dag-placement/plots/v2/data'
+local_log_dir='/home/shweta/workspace/research/dag-placement/log/tight-loop'
+plots_dir='/home/shweta/workspace/research/dag-placement/plots/tight-loop/data'
 
-##run experiments
-#for runid in runs:
-#  for proc in processing_intervals:
-#    for rate in publication_rates:
-#      log_dir='%s/run%d/p%d/r%d'%(local_log_dir,runid,proc,rate)
-#      if not os.path.exists(log_dir):
-#        os.makedirs(log_dir)
-#      distributed.execute('dags/config/input_rate/fan_in_fan_out/v2/g1/v_2_g_1_c1.txt',\
-#        'v_2_g_1_c1',rate,execution_interval,proc,remote_log_dir,log_dir)
+#run experiments
+for runid in runs:
+  for proc in processing_intervals:
+    for rate in publication_rates:
+      log_dir='%s/run%d/p%d/r%d'%(local_log_dir,runid,proc,rate)
+      if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+      distributed.execute('dags/config/input_rate/fan_in_fan_out/v2/g1/v_2_g_1_c1.txt',\
+        'v_2_g_1_c1',rate,execution_interval,proc,remote_log_dir,log_dir)
 
 #summarize results
 for runid in runs:
