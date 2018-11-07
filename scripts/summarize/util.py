@@ -22,7 +22,7 @@ def process_util(log_dir):
    
     avg_cpu=np.mean(data['user'] + data['sys'])
     avg_iowait=np.mean(data['iowait'])
-    avg_mem=np.mean(data['per'])
+    avg_mem=((497328-np.mean(data['free']+data['buffer']+data['cached']))*100)/497328
    
     host_util_map[hostname]= {'cpu':avg_cpu,\
       'iowait':avg_iowait,\

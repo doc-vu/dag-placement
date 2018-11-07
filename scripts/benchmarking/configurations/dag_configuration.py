@@ -68,5 +68,5 @@ def create_configuration(vcount,graphCount,dag_type):
 
     
 if __name__=="__main__": 
-  for vcount in range(2,3):
-    create_configuration(vcount,1,'fan_in_fan_out')
+  for vcount in range(4,9):
+    create_configuration(vcount,5,'fan_in_fan_out')

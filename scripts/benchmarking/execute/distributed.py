@@ -3,23 +3,39 @@ import argparse,subprocess,re,os
 
 def execute(dag,graph_id,publication_rate,execution_interval,\
   processing_interval,remote_log_dir,local_log_dir):
+  
+  #get count of physical nodes present in the test-bed
+  nodes=[]
+  with open('inventory/nodes','r') as f:
+    for line in f:
+      nodes.append(line.split(' ')[0])
 
   #get all vertices in DAG
   with open(dag,'r') as f:
     next(f)#skip header
     vertices=f.readlines()
+  
+  #get count of physical nodes that will be used in the experiment 
+  if len(vertices)>len(nodes):
+    experiment_node_count=len(nodes)
+  else:
+    experiment_node_count=len(vertices)
  
   sinks=int(vertices[0].strip().split(';')[5])
   #clean-up remote log directory
   subprocess.check_call(['ansible-playbook','playbooks/clean.yml',\
-    '--limit','all[0:%d]'%(len(vertices)-1),\
+    '--limit','all[0:%d]'%(experiment_node_count-1),\
     '--extra-vars=dir=%s'%(remote_log_dir)]) 
 
   #execute each vertex on a separate device
   for idx,vertex_description in enumerate(vertices):
+    if idx>=(len(nodes)-1):
+      node_id=len(nodes)-1
+    else:
+      node_id=idx
     if idx==(len(vertices)-1):
       subprocess.check_call(['ansible-playbook','playbooks/vertex.yml',\
-        '--limit','all[%d]'%(idx),\
+        '--limit','all[%d]'%(node_id),\
         "--extra-vars=detachedMode=false \
         graph_id=%s \
         vertex_description='%s' \
@@ -34,7 +50,7 @@ def execute(dag,graph_id,publication_rate,execution_interval,\
         processing_interval)])
     else:
       subprocess.check_call(['ansible-playbook','playbooks/vertex.yml',\
-        '--limit','all[%d]'%(idx),\
+        '--limit','all[%d]'%(node_id),\
         "--extra-vars=graph_id=%s \
         vertex_description='%s' \
         publication_rate=%d \
@@ -49,12 +65,12 @@ def execute(dag,graph_id,publication_rate,execution_interval,\
 
 
   #copy log files from remote devices
-  while(not verify('%s/%s'%(local_log_dir,graph_id),sinks,len(vertices))):
+  while(not verify('%s/%s'%(local_log_dir,graph_id),sinks,experiment_node_count)):
     #collect all log files
     subprocess.check_call(['ansible-playbook',\
       'playbooks/copy.yml',\
       '--limit',\
-      'all[0:%d]'%(len(vertices)-1),\
+      'all[0:%d]'%(experiment_node_count-1),\
       '--extra-vars=src_dir=%s/%s dest_dir=%s'%(remote_log_dir,graph_id,local_log_dir)])
 
 #verify if all log files are present
@@ -76,6 +92,12 @@ def verify(log_dir,sinks,devices):
   if ((sink_count==sinks) and (util_count==devices) and (nw_count==devices)):
     return True
   else:
+    if (sink_count!=sinks):
+      print('sink')
+    if (util_count!=devices):
+      print('util_count')
+    if (nw_count!=devices):
+      print('nw count')
     return False
 
 if __name__=="__main__":
