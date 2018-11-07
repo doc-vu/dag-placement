@@ -107,6 +107,7 @@ public class Operation extends DataReaderAdapter{
 
                 		//Process p = Runtime.getRuntime().exec(String.format("stress-ng --cpu 1 --cpu-method gray --cpu-ops %d",executionInterval));
                 		//p.waitFor();
+                		bogus(executionInterval);
                 	}
                 	//}
                 	if(count.get()%100==0){
@@ -135,6 +136,15 @@ public class Operation extends DataReaderAdapter{
 		} */finally {
             dr.return_loan(dataSeq, infoSeq);
         }
+	}
+	
+	private void bogus(int executionInterval){
+		//fib(22) was benchmarked on BBB and it takes ~1ms on average 
+		if (Util.bogusIterations.containsKey(executionInterval)){
+			for(int i=0; i< Util.bogusIterations.get(executionInterval);i++){
+				Util.fib(22);
+			}
+		}
 	}
 
 	public void close_writer(){

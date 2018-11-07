@@ -6,11 +6,25 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Util {
 	private static Logger logger=LogManager.getLogger(Util.class.getSimpleName());
+	@SuppressWarnings("serial")
+	public static final Map<Integer, Integer> bogusIterations=new HashMap<Integer,Integer>(){{
+		put(1,1);
+		put(5,6);
+		put(10,12);
+		put(15,18);
+		put(20,24);
+		put(25,30);
+		put(30,36);
+		put(35,42);
+		put(40,48);
+	}};
 
 	public static String hostName(){
 		String hostname=null;
@@ -44,5 +58,11 @@ public class Util {
 		}finally{
 			writer.close();
 		}
+	}
+	
+	public static int fib(int n) {
+		if (n <= 1)
+			return n;
+		return fib(n - 1) + fib(n - 2);
 	}
 }
