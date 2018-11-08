@@ -12,6 +12,7 @@ def process_util(log_dir):
   
   host_util_map={}
   for f in util_files:
+    print(f)
     #extract host name from file name
     hostname=f.rpartition('/')[2].split('_')[1].split('.')[0]
     data=pd.read_csv(f,delimiter=';',\
@@ -40,6 +41,7 @@ def process_nw(log_dir):
   #map for host to avg network usage 
   host_nw_map={}
   for f in nw_files:
+    print(f)
     #extract host name from file name
     hostname=f.rpartition('/')[2].split('_')[1].split('.')[0]
     data=pd.read_csv(f,delimiter=';',header=None,skiprows=1)

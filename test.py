@@ -7,7 +7,7 @@ remote_log_dir='/home/riaps/workspace/dag-placement/log'
 
 #variables
 vertices=2
-runs=[1,2,3]
+runs=[1,2]
 processing_intervals=[1,5,10,20]
 publication_rates=[1,5,10,20,40]
 execution_interval=300
@@ -38,8 +38,9 @@ for runid in runs:
 for runid in runs:
   for proc in processing_intervals:
     for rate in publication_rates:
-      util.process('%s/run%d/p%d/r%d/%s/dag'%(local_log_dir,runid,proc,rate,graph_id),
-        '%s/run%d/p%d/r%d/%s/summary'%(local_log_dir,runid,proc,rate,graph_id))
+      print('%s/run%d/p%d/r%d/%s/dag'%(local_log_dir,runid,proc,rate,graph_id))
+      #util.process('%s/run%d/p%d/r%d/%s/dag'%(local_log_dir,runid,proc,rate,graph_id),
+      #  '%s/run%d/p%d/r%d/%s/summary'%(local_log_dir,runid,proc,rate,graph_id))
       latency.process('%s/run%d/p%d/r%d/%s/dag'%(local_log_dir,runid,proc,rate,graph_id),
         '%s/run%d/p%d/r%d/%s/summary'%(local_log_dir,runid,proc,rate,graph_id))
 
@@ -59,20 +60,20 @@ for runid in runs:
     os.makedirs('%s/run%d'%(plots_dir,runid))
 
   with open('%s/run%d/latency_avg.csv'%(plots_dir,runid),'w') as f:
-    f.write('p-1,p1,p5,p10,p20\n')
-    for rate in [1,5,10,20,40]:
+    f.write(','.join(['p%d'%(i) for i in processing_intervals])+'\n')
+    for rate in publication_rates:
       val_str=''
-      for proc in [-1,1,5,10,20]:
+      for proc in processing_intervals:
         with open('%s/run%d/p%d/r%d/%s/summary/summary_latency.csv'%(local_log_dir,runid,proc,rate,graph_id),'r') as inp:
           next(inp)
           val_str+=next(inp).strip().split(',')[1]+','
       f.write(val_str.strip(',')+'\n')
   
   with open('%s/run%d/latency_90th.csv'%(plots_dir,runid),'w') as f:
-    f.write('p-1,p1,p5,p10,p20\n')
-    for rate in [1,5,10,20,40]:
+    f.write(','.join(['p%d'%(i) for i in processing_intervals])+'\n')
+    for rate in publication_rates:
       val_str=''
-      for proc in [-1,1,5,10,20]:
+      for proc in processing_intervals:
         with open('%s/run%d/p%d/r%d/%s/summary/summary_latency.csv'%(local_log_dir,runid,proc,rate,graph_id),'r') as inp:
           next(inp)
           val_str+=next(inp).strip().split(',')[2]+','
@@ -81,10 +82,10 @@ for runid in runs:
 
   for node in bbb[0:experiment_node_count]:
     with open('%s/run%d/cpu_%s.csv'%(plots_dir,runid,node),'w') as f:
-      f.write('p-1,p1,p5,p10,p20\n')
-      for rate in [1,5,10,20,40]:
+      f.write(','.join(['p%d'%(i) for i in processing_intervals])+'\n')
+      for rate in publication_rates:
         val_str=''
-        for proc in [-1,1,5,10,20]:
+        for proc in processing_intervals:
           with open('%s/run%d/p%d/r%d/%s/summary/summary_util.csv'%(local_log_dir,runid,proc,rate,graph_id),'r') as inp:
             for line in inp:
               if line.startswith(node):
@@ -93,10 +94,10 @@ for runid in runs:
   
   for node in bbb[0:experiment_node_count]:
     with open('%s/run%d/mem_%s.csv'%(plots_dir,runid,node),'w') as f:
-      f.write('p-1,p1,p5,p10,p20\n')
-      for rate in [1,5,10,20,40]:
+      f.write(','.join(['p%d'%(i) for i in processing_intervals])+'\n')
+      for rate in publication_rates:
         val_str=''
-        for proc in [-1,1,5,10,20]:
+        for proc in processing_intervals:
           with open('%s/run%d/p%d/r%d/%s/summary/summary_util.csv'%(local_log_dir,runid,proc,rate,graph_id),'r') as inp:
             for line in inp:
               if line.startswith(node):
@@ -105,10 +106,10 @@ for runid in runs:
   
   for node in bbb[0:experiment_node_count]:
     with open('%s/run%d/nw_%s.csv'%(plots_dir,runid,node),'w') as f:
-      f.write('p-1,p1,p5,p10,p20\n')
-      for rate in [1,5,10,20,40]:
+      f.write(','.join(['p%d'%(i) for i in processing_intervals])+'\n')
+      for rate in publication_rates:
         val_str=''
-        for proc in [-1,1,5,10,20]:
+        for proc in processing_intervals:
           with open('%s/run%d/p%d/r%d/%s/summary/summary_util.csv'%(local_log_dir,runid,proc,rate,graph_id),'r') as inp:
             for line in inp:
               if line.startswith(node):
