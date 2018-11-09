@@ -3,7 +3,6 @@ package edu.vanderbilt.kharesp.zmq.dagPlacement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;

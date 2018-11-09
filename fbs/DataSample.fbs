@@ -1,0 +1,7 @@
+namespace edu.vanderbilt.kharesp.zmq.types;
+
+table DataSample {
+  sampleId: int;
+  sourceTs: long;
+  payload: [byte];  
+}
