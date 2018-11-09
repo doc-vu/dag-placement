@@ -1,4 +1,4 @@
-import argparse,subprocess,re,os
+import argparse,subprocess,re,os,time
 
 
 def execute(dag,graph_id,publication_rate,execution_interval,\
@@ -65,17 +65,17 @@ def execute(dag,graph_id,publication_rate,execution_interval,\
 
 
   #copy log files from remote devices
-  while(not verify('%s/%s'%(local_log_dir,graph_id),sinks,experiment_node_count)):
+  while(not verify('%s'%(local_log_dir),sinks,experiment_node_count)):
     #collect all log files
     subprocess.check_call(['ansible-playbook',\
-      'playbooks/copy.yml',\
+      'playbooks/copy2.yml',\
       '--limit',\
       'all[0:%d]'%(experiment_node_count-1),\
-      '--extra-vars=src_dir=%s/%s dest_dir=%s'%(remote_log_dir,graph_id,local_log_dir)])
+      '--extra-vars=src_dir=%s/%s/dag dest_dir=%s/dag/'%(remote_log_dir,graph_id,local_log_dir)])
 
 #verify if all log files are present
 def verify(log_dir,sinks,devices):
-  if not os.path.exists('%s'%(log_dir)):
+  if not os.path.exists('%s/dag'%(log_dir)):
     return False
 
   files=os.listdir('%s/dag'%(log_dir))
