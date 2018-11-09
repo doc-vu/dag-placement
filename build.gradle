@@ -13,6 +13,11 @@ repositories {
 dependencies {
 	compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.1'
 	compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.1'
+	compile group: 'org.zeromq', name: 'jeromq', version: '0.4.3'
+	compile 'org.apache.curator:apache-curator:4.0.1'
+	compile 'org.apache.curator:curator-framework:4.0.1'
+	compile 'org.apache.curator:curator-client:4.0.1'
+	compile 'org.apache.curator:curator-recipes:4.0.1'
 	compile fileTree(dir: "${System.env.NDDSHOME}/lib/java", include: ['*.jar'])
 }
 

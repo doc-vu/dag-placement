@@ -36,7 +36,18 @@ public class Util {
 		return hostname;
 	}
 	
+	public static String ipAddress(){
+		String ip=null;
+		try {
+             ip= InetAddress.getLocalHost().getHostAddress();
+        } catch (java.net.UnknownHostException e) {
+        	logger.error(e.getMessage(),e);
+        }
+		return ip;
+	}
+	
 	public static void executeCommand(String command,String outputFile){
+		logger.info("Executing command:{}",command);
 		PrintWriter writer=null;
 		try {
 			writer= new PrintWriter(outputFile,"UTF-8");
