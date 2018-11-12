@@ -96,14 +96,14 @@ public class Operation extends DataReaderAdapter{
                 	DataSample64B sample=dataSeq.get(i);
                 	//Perform bogus operation
                 	//if (!sink){
-                	long currTime=System.currentTimeMillis();
                 	if (executionInterval>0){
-                		while(true){
-                			long newTime=System.currentTimeMillis();
-                			if ((newTime-currTime)>executionInterval){
-                				break;
-                			}
-                		}
+                      	//long currTime=System.currentTimeMillis();
+                		//while(true){
+                		//	long newTime=System.currentTimeMillis();
+                		//	if ((newTime-currTime)>executionInterval){
+                		//		break;
+                		//	}
+                		//}
 
                 		//Process p = Runtime.getRuntime().exec(String.format("stress-ng --cpu 1 --cpu-method gray --cpu-ops %d",executionInterval));
                 		//p.waitFor();

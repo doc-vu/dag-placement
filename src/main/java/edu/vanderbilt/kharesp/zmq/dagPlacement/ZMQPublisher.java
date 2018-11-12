@@ -1,8 +1,8 @@
 package edu.vanderbilt.kharesp.zmq.dagPlacement;
 
 import org.zeromq.ZMQ;
-import edu.vanderbilt.edgent.types.DataSampleHelper;
 
+import edu.vanderbilt.kharesp.zmq.types.DataSampleHelper;
 public class ZMQPublisher {
 
 	public static void main(String args[]){
@@ -22,10 +22,9 @@ public class ZMQPublisher {
 			int sleep_interval=1000/publicationRate;
 			for(int i=0;i<publicationRate*executionInterval;i++){
 				pub.sendMore("test".getBytes());
-				pub.send(fb.serialize(i+1, // sample
-					0, 0, 0, System.currentTimeMillis(), // pubSendTs
-					-1, // ebReceiveTs
-					"pub",64));
+				pub.send(fb.serialize(i+1, // sampleId
+					 System.currentTimeMillis(), // sourceTs 
+					 52)); // payloadSize
 				Thread.sleep(sleep_interval);
 				if(i%100==0){
 					System.out.println(i);

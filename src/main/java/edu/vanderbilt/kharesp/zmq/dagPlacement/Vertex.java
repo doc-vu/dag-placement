@@ -1,8 +1,13 @@
 package edu.vanderbilt.kharesp.zmq.dagPlacement;
 
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Map.Entry;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -10,11 +15,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.zookeeper.data.Stat;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
+
+import org.zeromq.ZMsg;
 import edu.vanderbilt.kharesp.dagPlacement.Util;
+import edu.vanderbilt.kharesp.zmq.types.DataSample;
+import edu.vanderbilt.kharesp.zmq.types.DataSampleHelper;
 
 public class Vertex {
 	public static final String ZK_CONNECTOR="129.59.105.159:2181";
+	public static final String CTRL_CMD_START_PUBLISHING="start";
+	public static final String CTRL_CMD_EXIT="exit";
 
 	private Logger logger;
 
@@ -22,12 +34,11 @@ public class Vertex {
 	private String vId;
 	private float selectivity;
 	private float inputRate;
-	private int sinkCount;
-	private int vCount;
-	private float publicationRate;
+	private int publicationRate;
 	private int executionTime;
 	private String logDir;
 	private int processingInterval;
+	private PrintWriter pw;
 
 	
 	private boolean source;
@@ -35,10 +46,12 @@ public class Vertex {
 	private boolean cleanupCalled;
 	private CuratorFramework client;
 	
-	private ZMQ.Context context;
 	private String ipAddr;
+	private ZMQ.Context context;
+	private ZMQ.Poller poller;
 	private HashMap<String,ZMQ.Socket> publisherSockets; 
 	private ZMQ.Socket subscriberSocket;
+	private ZMQ.Socket controlSocket;
 
 	public Vertex(String graphId,String vId,
 			ArrayList<String> incomingEdges,ArrayList<String> outgoingEdges,
@@ -51,8 +64,8 @@ public class Vertex {
 		this.vId=vId;
 		this.selectivity=selectivity;
 		this.inputRate=inputRate;
-		this.sinkCount=sinkCount;
-		this.vCount=vCount;
+		//this.sinkCount=sinkCount;
+		//this.vCount=vCount;
 		this.publicationRate=publicationRate;
 		this.executionTime=executionTime;
 		this.logDir=logDir;
@@ -73,76 +86,183 @@ public class Vertex {
 	}
 	
 	private void initialize(ArrayList<String> incomingEdges,ArrayList<String> outgoingEdges){
-		this.context = ZMQ.context(1);
-		if (incomingEdges.size()==0){
-			source=true;
-		}
-		if(outgoingEdges.size()==0){
-			sink=true;
-		}
-
-		for(String topic: outgoingEdges){
-			ZMQ.Socket socket= context.socket(ZMQ.PUB);
-			int portNum=socket.bindToRandomPort("tcp://*");
-			socket.setHWM(0);
-			publisherSockets.put(topic,socket);
-			logger.info("Vertex:{} will publish topic:{} at {}",vId,topic,String.format("tcp://%s:%d",ipAddr,portNum));
-
-			try {
-				client.create().creatingParentsIfNeeded().forPath(String.format("/%s/topics/%s",graphId,topic),
-						String.format("tcp://%s:%d",ipAddr,portNum).getBytes());
-			} catch (Exception e) {
-				logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
+		try{
+			//create ZMQ context
+			this.context = ZMQ.context(1);
+			
+			//determine if vertex is source or sink
+			if (incomingEdges.size() == 0) {
+				source = true;
+				logger.info("Vertex:{} is a source vertex",vId);
 			}
-		}
-		for(String topic: incomingEdges){
-			if(subscriberSocket==null){
-				subscriberSocket=context.socket(ZMQ.SUB);
-				subscriberSocket.setHWM(0);
-				while(true){
-					try {
-						Stat res=client.checkExists().forPath(String.format("/%s/topics/%s",graphId,topic));
-						if(res!=null){
-							String connector= new String(client.getData().forPath(String.format("/%s/topics/%s",graphId,topic)));
+			if (outgoingEdges.size() == 0) {
+				sink = true;
+				pw = new PrintWriter(String.format("%s/%s.csv",
+						logDir,vId));
+				logger.info("Vertex:{} is a sink vertex",vId);
+			}
+			
+			//Initialize control SUB socket to receive control signals
+			controlSocket=context.socket(ZMQ.SUB);
+			controlSocket.setHWM(0);
+			String controlConnector = new String(client.getData().forPath(String.format("/%s/control", graphId)));
+			controlSocket.connect(controlConnector);
+			controlSocket.subscribe(graphId.getBytes());
+
+			
+			//Initialize PUB sockets for outgoing edges
+			for (String topic : outgoingEdges) {
+				ZMQ.Socket socket = context.socket(ZMQ.PUB);
+				int portNum = socket.bindToRandomPort("tcp://*");
+				socket.setHWM(0);
+				publisherSockets.put(topic, socket);
+				logger.info("Vertex:{} will publish topic:{} at {}", vId, topic,
+						String.format("tcp://%s:%d", ipAddr, portNum));
+
+				client.create().creatingParentsIfNeeded().forPath(String.format("/%s/topics/%s", graphId, topic),
+						String.format("tcp://%s:%d", ipAddr, portNum).getBytes());
+			}
+			 
+			//Initialize SUB sockets for incoming edges
+			for (String topic : incomingEdges) {
+				if (subscriberSocket == null) {
+					subscriberSocket = context.socket(ZMQ.SUB);
+					subscriberSocket.setHWM(0);
+					while (true) {
+						Stat res = client.checkExists().forPath(String.format("/%s/topics/%s", graphId, topic));
+						if (res != null) {
+							String connector = new String(
+									client.getData().forPath(String.format("/%s/topics/%s", graphId, topic)));
 							subscriberSocket.connect(connector);
 							subscriberSocket.subscribe(topic.getBytes());
-							logger.info("Vertex:{} subscribed to topic:{} at {}",vId,topic,connector);
+							logger.info("Vertex:{} subscribed to topic:{} at {}", vId, topic, connector);
 							break;
 						}
 						Thread.sleep(100);
-					} catch (Exception e) {
-						logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
 					}
 				}
 			}
-		}
-
-		try {
-			client.create().creatingParentsIfNeeded().forPath(String.format("/%s/coord/joined/%s",graphId,vId));
-			logger.info("Vertex:{} initialized",vId);
-		} catch (Exception e) {
+			
+			//Create /graphId/joined/vId node after initialization is complete
+			client.create().creatingParentsIfNeeded().forPath(String.format("/%s/coord/joined/%s", graphId, vId));
+			logger.info("Vertex:{} initialized", vId);
+		}catch(Exception e){
 			logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
 		}
 	}
 	
 	public void run(){
+		long startTs=System.currentTimeMillis();
 		if(source){
 			publish();
 		}else{
 			process();
 		}
+		long endTs=System.currentTimeMillis();
+		cleanup();
+		collectStats(startTs,endTs);
 	}
 	
 	private void publish(){
-		
+		//wait for control signal to begin publishing data
+		while(true){
+			String topic=controlSocket.recvStr();
+			String data=controlSocket.recvStr();
+			if(data.equals(CTRL_CMD_START_PUBLISHING)){
+				logger.info("Vertex:{} received control message:{} on control topic:{}.{} will start publishing data.",vId,data,topic,vId);
+				break;
+			}
+		}
+
+		DataSampleHelper fb=new DataSampleHelper();
+		int sleep_interval=1000/publicationRate;
+		for(int i=0;i<publicationRate*executionTime;i++){
+			byte[] data=fb.serialize(i+1, System.currentTimeMillis(), 52);
+			for (ZMQ.Socket pub: publisherSockets.values()){
+				pub.sendMore(graphId.getBytes());
+				pub.send(data); 
+			}
+			if((i+1)%100==0){
+				logger.debug("Vertex:{} sent {} samples",vId,i+1);
+			}
+			try{
+				Thread.sleep(sleep_interval);
+			}catch(InterruptedException e){
+				logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
+			}
+		}
 	}
 	
 	private void process(){
-		
+		poller=context.poller(2);
+		poller.register(subscriberSocket, ZMQ.Poller.POLLIN);
+		poller.register(controlSocket, ZMQ.Poller.POLLIN);
+
+		logger.info("Vertex:{} will start processing incoming data",vId);
+		int count=0;
+		while (true) {
+			try {
+				poller.poll(-1);
+				if (poller.pollin(0)) {//process incoming data 
+					//receive data
+					ZMsg msg= ZMsg.recvMsg(subscriberSocket);
+					byte[] data=msg.getLast().getData();
+					DataSample sample=DataSampleHelper.deserialize(data);
+				
+					//increment count
+					count++;
+				
+					//perform bogus operation
+					bogus(processingInterval);
+
+					if (sink) {
+						// write results to file
+						long receiveTs = System.currentTimeMillis();
+						long sourceTs = sample.sourceTs();
+						pw.println(String.format("%s,%d,%d\n", vId, sample.sampleId(), receiveTs - sourceTs));
+						if (count >= (int) (inputRate * publicationRate * executionTime)) {
+							logger.debug("Vertex:{} received all messages. Count:{}", vId, count);
+							client.create().forPath(String.format("/%s/coord/sink/%s",graphId,vId));
+							break;
+						}
+
+					}else{
+						// forward data on outgoing edges as per selectivity
+						if (selectivity == 1 || (selectivity == .5 && count % 2 == 0)) {
+							for (Entry<String, Socket> entry : publisherSockets.entrySet()) {
+								entry.getValue().sendMore(entry.getKey().getBytes());
+								entry.getValue().send(data);
+							}
+						}
+					}
+					
+					if(count%100==0){
+                		logger.debug("Vertex:{} received sample count:{}",vId,count);
+                	}
+				}
+				if (poller.pollin(1)) {//process control command
+					String topic=controlSocket.recvStr();
+					String controlMsg=controlSocket.recvStr();
+					if(controlMsg.equals(CTRL_CMD_EXIT)){
+						logger.info("Vertex:{} got control msg:{} on topic:{}. Will stop listening for incoming data.",
+								vId,controlMsg,topic);
+						break;
+					}
+				}
+			}catch (Exception e) {
+				logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
+				break;
+			}
+		}
 	}
 	
 	public void cleanup(){
 		if(!cleanupCalled){
+			controlSocket.setLinger(0);
+			controlSocket.close();
+			if(poller!=null){
+				poller.close();
+			}
 			if(subscriberSocket!=null){
 				subscriberSocket.setLinger(0);
 				subscriberSocket.close();
@@ -155,6 +275,30 @@ public class Vertex {
 		}
 	}
 
+	private void collectStats(long startTs,long endTs){
+		SimpleDateFormat formatter= new SimpleDateFormat("HH:mm:ss");
+		String startTime= formatter.format(new Date(startTs));
+		String endTime= formatter.format(new Date(endTs));
+
+		//collect system utilization metrics 
+		String utilStatsFile=String.format("%s/util_%s.csv",logDir,Util.hostName());
+		String command=String.format("sadf -s %s -e %s -U -h -d -- -ur",startTime,endTime);
+		Util.executeCommand(command,utilStatsFile);
+
+		//collect network utilization metrics
+		String nwStatsFile=String.format("%s/nw_%s.csv",logDir,Util.hostName());
+		command=String.format("sadf -s %s -e %s -U -h -d -- -n DEV",startTime,endTime);
+		Util.executeCommand(command,nwStatsFile);
+	}
+
+	private void bogus(int processingInterval){
+		//fib(22) was benchmarked on BBB and it takes ~1ms on average 
+		if (Util.bogusIterations.containsKey(processingInterval)){
+			for(int i=0; i< Util.bogusIterations.get(processingInterval);i++){
+				Util.fib(22);
+			}
+		}
+	}
 	public static void main(String args[]){
 		if(args.length < 6){
 			System.out.println("Vertex graphId,vertex_descriptor_string,publicationRate,executionTime,logDir,processingInterval");

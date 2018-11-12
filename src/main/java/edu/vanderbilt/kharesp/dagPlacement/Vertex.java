@@ -27,7 +27,7 @@ import com.rti.dds.types.DataSample64BTypeSupport;
 
 
 public class Vertex {
-	private static final int DOMAIN_ID=1;
+	private static final int DOMAIN_ID=2;
 	
 	private Logger logger;
 	private String graphId;

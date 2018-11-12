@@ -2,9 +2,9 @@ package edu.vanderbilt.kharesp.zmq.dagPlacement;
 
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
-import edu.vanderbilt.edgent.types.DataSample;
-import edu.vanderbilt.edgent.types.DataSampleHelper;
 import edu.vanderbilt.kharesp.dagPlacement.Util;
+import edu.vanderbilt.kharesp.zmq.types.DataSample;
+import edu.vanderbilt.kharesp.zmq.types.DataSampleHelper;
 
 public class ZMQSubscriber {
 	public static void main(String args[]){
@@ -27,7 +27,7 @@ public class ZMQSubscriber {
 			while(receiveCount<publicationRate*executionInterval){
 				ZMsg msg = ZMsg.recvMsg(sub);
 				DataSample sample = DataSampleHelper.deserialize(msg.getLast().getData());
-				long sourceTs=sample.pubSendTs();
+				long sourceTs=sample.sourceTs();
 
 				if (Util.bogusIterations.containsKey(processingInterval)){
 					for(int i=0; i< Util.bogusIterations.get(processingInterval);i++){
