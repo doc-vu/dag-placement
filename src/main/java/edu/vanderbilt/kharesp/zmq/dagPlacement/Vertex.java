@@ -166,10 +166,10 @@ public class Vertex {
 	private void publish(){
 		//wait for control signal to begin publishing data
 		while(true){
-			String topic=controlSocket.recvStr();
-			String data=controlSocket.recvStr();
-			if(data.equals(CTRL_CMD_START_PUBLISHING)){
-				logger.info("Vertex:{} received control message:{} on control topic:{}.{} will start publishing data.",vId,data,topic,vId);
+			String[] parts=controlSocket.recvStr().split(" ");
+
+			if(parts[1].equals(CTRL_CMD_START_PUBLISHING)){
+				logger.info("Vertex:{} received control message:{} on control topic:{}.{} will start publishing data.",vId,parts[1],parts[0],vId);
 				break;
 			}
 		}
@@ -241,11 +241,10 @@ public class Vertex {
                 	}
 				}
 				if (poller.pollin(1)) {//process control command
-					String topic=controlSocket.recvStr();
-					String controlMsg=controlSocket.recvStr();
-					if(controlMsg.equals(CTRL_CMD_EXIT)){
+					String[] parts=controlSocket.recvStr().split(" ");
+					if(parts[1].equals(CTRL_CMD_EXIT)){
 						logger.info("Vertex:{} got control msg:{} on topic:{}. Will stop listening for incoming data.",
-								vId,controlMsg,topic);
+								vId,parts[1],parts[0]);
 						break;
 					}
 				}
