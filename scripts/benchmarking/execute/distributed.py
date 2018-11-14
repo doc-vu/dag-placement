@@ -1,12 +1,15 @@
-import argparse,subprocess,re,os,time
+import argparse,subprocess,re,os,time,sys
+from multiprocessing import Process
+sys.path.insert(0, './scripts/benchmarking/execute/zmq')
+import coordinator
 
 
 def execute(dag,graph_id,publication_rate,execution_interval,\
-  processing_interval,remote_log_dir,local_log_dir):
+  processing_interval,remote_log_dir,local_log_dir,inventory_file,zmq,zk_connector=None):
   
   #get count of physical nodes present in the test-bed
   nodes=[]
-  with open('inventory/nodes','r') as f:
+  with open(inventory_file,'r') as f:
     for line in f:
       nodes.append(line.split(' ')[0])
 
@@ -22,9 +25,18 @@ def execute(dag,graph_id,publication_rate,execution_interval,\
     experiment_node_count=len(vertices)
  
   sinks=int(vertices[0].strip().split(';')[5])
+
+  if zmq:
+    #start coordinator
+    print('ZMQ based implementation')
+    coord=coordinator.Coordinate(zk_connector=zk_connector,graph_id=graph_id,vertex_count=len(vertices),sink_count=sinks)
+    zk_coordinator=Process(target=coord.run)
+    zk_coordinator.start()
+
   #clean-up remote log directory
   subprocess.check_call(['ansible-playbook','playbooks/clean.yml',\
     '--limit','all[0:%d]'%(experiment_node_count-1),\
+    '--inventory',inventory_file,\
     '--extra-vars=dir=%s'%(remote_log_dir)]) 
 
   #execute each vertex on a separate device
@@ -36,32 +48,36 @@ def execute(dag,graph_id,publication_rate,execution_interval,\
     if idx==(len(vertices)-1):
       subprocess.check_call(['ansible-playbook','playbooks/vertex.yml',\
         '--limit','all[%d]'%(node_id),\
-        "--extra-vars=detachedMode=false \
+        '--inventory',inventory_file,\
+        "--extra-vars=detachedMode=False \
         graph_id=%s \
         vertex_description='%s' \
         publication_rate=%d \
         execution_interval=%d \
         log_dir=%s \
-        processing_interval=%d"%(graph_id,\
+        processing_interval=%d \
+        zmq=%d"%(graph_id,\
         re.escape(vertex_description.strip()),\
         publication_rate,\
         execution_interval,\
         '%s/%s'%(remote_log_dir,graph_id),\
-        processing_interval)])
+        processing_interval,zmq)])
     else:
       subprocess.check_call(['ansible-playbook','playbooks/vertex.yml',\
         '--limit','all[%d]'%(node_id),\
+        '--inventory',inventory_file,\
         "--extra-vars=graph_id=%s \
         vertex_description='%s' \
         publication_rate=%d \
         execution_interval=%d \
         log_dir=%s \
-        processing_interval=%d"%(graph_id,\
+        processing_interval=%d \
+        zmq=%d"%(graph_id,\
         re.escape(vertex_description.strip()),\
         publication_rate,\
         execution_interval,\
         '%s/%s'%(remote_log_dir,graph_id),\
-        processing_interval)])
+        processing_interval,zmq)])
 
 
   #copy log files from remote devices
@@ -69,9 +85,13 @@ def execute(dag,graph_id,publication_rate,execution_interval,\
     #collect all log files
     subprocess.check_call(['ansible-playbook',\
       'playbooks/copy2.yml',\
+      '--inventory',inventory_file,\
       '--limit',\
       'all[0:%d]'%(experiment_node_count-1),\
       '--extra-vars=src_dir=%s/%s/dag dest_dir=%s/dag/'%(remote_log_dir,graph_id,local_log_dir)])
+
+  if zmq:
+    zk_coordinator.join()
 
 #verify if all log files are present
 def verify(log_dir,sinks,devices):
@@ -109,7 +129,10 @@ if __name__=="__main__":
   parser.add_argument('-processing_interval',type=int,help='processing interval for each intermediate vertex',required=True)
   parser.add_argument('-remote_log_dir',help='remote log directory where output logs are present',required=True)
   parser.add_argument('-local_log_dir',help='local log directory where output logs should be placed',required=True)
+  parser.add_argument('-inventory',help='inventory file of test nodes',required=True)
+  parser.add_argument('--zmq',help='flag to specify execution of zmq based implementation',action='store_true',default=False)
+  parser.add_argument('--zk_connector',help='zookeeper connector',required='--zmq' in sys.argv)
   args=parser.parse_args()
 
   execute(args.dag,args.graph_id,args.publication_rate,args.execution_interval,\
-    args.processing_interval,args.remote_log_dir,args.local_log_dir)
+    args.processing_interval,args.remote_log_dir,args.local_log_dir,args.inventory,args.zmq,args.zk_connector)
