@@ -4,8 +4,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -69,6 +73,27 @@ public class Util {
 		}finally{
 			writer.close();
 		}
+	}
+	
+	public static String ipAddressIface(String interfaceName){
+		String ip = null;
+		try {
+			NetworkInterface networkInterface;
+			networkInterface = NetworkInterface.getByName(interfaceName);
+			Enumeration<InetAddress> inetAddress = networkInterface.getInetAddresses();
+			InetAddress currentAddress;
+			currentAddress = inetAddress.nextElement();
+			while (inetAddress.hasMoreElements()) {
+				currentAddress = inetAddress.nextElement();
+				if (currentAddress instanceof Inet4Address && !currentAddress.isLoopbackAddress()) {
+					ip = currentAddress.toString();
+					break;
+				}
+			}
+		} catch (SocketException e) {
+			logger.error(e.getMessage(), e);
+		}
+		return ip;
 	}
 	
 	public static int fib(int n) {
