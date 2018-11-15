@@ -1,0 +1,9 @@
+---
+- hosts: all
+  gather_facts: False
+  vars:
+    - scripts_dir: /home/riaps/workspace/dag-placement/scripts 
+    - log_dir: /home/riaps/workspace/dag-placement/log
+  tasks:
+    - name: start sysstat 
+      shell: '{{ scripts_dir }}/sysstat.sh {{ log_dir }} {{ start_ts }} {{ end_ts }}'

@@ -5,6 +5,7 @@
     - name: list all files to copy
       shell: (find {{ src_dir }}  -type f) 
       register: files_to_copy
+      ignore_errors: yes
     - name: print all file names
       debug: msg={{ item }}
       with_items: "{{ files_to_copy.stdout_lines }}"

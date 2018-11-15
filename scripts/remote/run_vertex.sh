@@ -22,7 +22,7 @@ source ~/.profile
 
 if [ "$zmq" -eq 1 ];
 then
-  java -Dlog4j.configurationFile=log4j2.xml  -cp dag-placement.jar edu.vanderbilt.kharesp.zmq.dagPlacement.Vertex $graph_id $vertex_description $publication_rate $execution_interval $log_dir/dag $processing_interval 1>$log_dir/err/"$vid".log 2>&1
+  java -Dlog4j.configurationFile=log4j2.xml  -cp dag-placement.jar edu.vanderbilt.kharesp.dagPlacement.zmq.Vertex $graph_id $vertex_description $publication_rate $execution_interval $log_dir/dag $processing_interval 1>$log_dir/err/"$vid".log 2>&1
 else
-  java -Dlog4j.configurationFile=log4j2.xml  -cp dag-placement.jar edu.vanderbilt.kharesp.dagPlacement.Vertex $graph_id $vertex_description $publication_rate $execution_interval $log_dir/dag $processing_interval 1>$log_dir/err/"$vid".log 2>&1
+  java -Dlog4j.configurationFile=log4j2.xml  -cp dag-placement.jar edu.vanderbilt.kharesp.dagPlacement.dds.Vertex $graph_id $vertex_description $publication_rate $execution_interval $log_dir/dag $processing_interval 1>$log_dir/err/"$vid".log 2>&1
 fi
