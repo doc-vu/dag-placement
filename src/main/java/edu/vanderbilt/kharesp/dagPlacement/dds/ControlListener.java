@@ -1,4 +1,4 @@
-package edu.vanderbilt.kharesp.dagPlacement;
+package edu.vanderbilt.kharesp.dagPlacement.dds;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -15,6 +15,8 @@ import com.rti.dds.subscription.SampleInfoSeq;
 import com.rti.dds.subscription.SampleStateKind;
 import com.rti.dds.subscription.ViewStateKind;
 import com.rti.dds.type.builtin.StringDataReader;
+
+import edu.vanderbilt.kharesp.dagPlacement.util.Util;
 
 public class ControlListener extends DataReaderAdapter {
 	private Logger logger;
@@ -48,14 +50,13 @@ public class ControlListener extends DataReaderAdapter {
 	                SampleInfo info = (SampleInfo)infoSeq.get(i);
 	                if (info.valid_data) {
 	                	String update=(String) dataSeq.get(i);
-	                	if (update.startsWith("sink")){
-	                		logger.info("ControlListener:{} sink:{} has received all messages",listenerId,
-	                				update.substring(update.indexOf('_')+1));
+	                	if (update.equals(Util.CTRL_CMD_EXIT)){
+	                		logger.info("ControlListener:{} got command:{}",listenerId,
+	                				update);
 	                		exitLatch.countDown();
 	                	}
-	                	if(update.startsWith("vid")){
-	                		logger.info("ControlListener:{} vertex:{} has initialized",listenerId,
-	                				update.substring(update.indexOf('_')+1));
+	                	if(update.equals(Util.CTRL_CMD_START_PUBLISHING)){
+	                		logger.info("ControlListener:{} got command:{}",listenerId,update);
 	                		sourceLatch.countDown();
 	                	}
 	                }

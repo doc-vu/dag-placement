@@ -1,10 +1,8 @@
-package edu.vanderbilt.kharesp.zmq.dagPlacement;
+package edu.vanderbilt.kharesp.dagPlacement.zmq;
 
 import java.io.PrintWriter;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import org.apache.curator.framework.CuratorFramework;
@@ -16,14 +14,12 @@ import org.apache.zookeeper.data.Stat;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
-import edu.vanderbilt.kharesp.dagPlacement.Util;
-import edu.vanderbilt.kharesp.zmq.types.DataSample;
-import edu.vanderbilt.kharesp.zmq.types.DataSampleHelper;
+import edu.vanderbilt.kharesp.dagPlacement.util.Util;
+import edu.vanderbilt.kharesp.dagPlacement.zmq.types.DataSample;
+import edu.vanderbilt.kharesp.dagPlacement.zmq.types.DataSampleHelper;
 
 public class Vertex {
 	public static final String ZK_CONNECTOR="129.59.105.159:2181";
-	public static final String CTRL_CMD_START_PUBLISHING="start";
-	public static final String CTRL_CMD_EXIT="exit";
 
 	private Logger logger;
 
@@ -105,10 +101,9 @@ public class Vertex {
 			//Initialize control SUB socket to receive control signals
 			controlSocket=context.socket(ZMQ.SUB);
 			controlSocket.setHWM(0);
-			String controlConnector = new String(client.getData().forPath(String.format("/%s/control", graphId)));
-			controlSocket.connect(controlConnector);
-			controlSocket.subscribe(graphId.getBytes());
-			logger.info("Vertex:{} will listen to control commands at {}",vId,controlConnector);
+			controlSocket.connect(Util.CONTROL_SOCKET_CONNECTOR);
+			controlSocket.subscribe(Util.CONTROL_TOPIC.getBytes());
+			logger.info("Vertex:{} will listen to control commands at {}",vId,Util.CONTROL_SOCKET_CONNECTOR);
 
 			
 			//Initialize PUB sockets for outgoing edges
@@ -143,8 +138,8 @@ public class Vertex {
 				}
 			}
 			
-			//Create /graphId/joined/vId node after initialization is complete
-			client.create().creatingParentsIfNeeded().forPath(String.format("/%s/coord/joined/%s", graphId, vId));
+			//Create /joined/graphId/vId node after initialization is complete
+			client.create().forPath(String.format("/joined/%s/%s", graphId, vId));
 			logger.info("Vertex:{} initialized", vId);
 		}catch(Exception e){
 			logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
@@ -152,15 +147,12 @@ public class Vertex {
 	}
 	
 	public void run(){
-		long startTs=System.currentTimeMillis();
 		if(source){
 			publish();
 		}else{
 			process();
 		}
-		long endTs=System.currentTimeMillis();
 		cleanup();
-		collectStats(startTs,endTs);
 		logger.info("Vertex:{} has exited",vId);
 	}
 	
@@ -169,7 +161,7 @@ public class Vertex {
 			// wait for control signal to begin publishing data
 			while (true) {
 				String[] parts = controlSocket.recvStr().split(" ");
-				if (parts[1].equals(CTRL_CMD_START_PUBLISHING)) {
+				if (parts[1].equals(Util.CTRL_CMD_START_PUBLISHING)) {
 					logger.info(
 							"Vertex:{} received control message:{} on control topic:{}.\nVertex:{} will start publishing data.",
 							vId, parts[1], parts[0], vId);
@@ -197,7 +189,7 @@ public class Vertex {
 			// wait for control signal to exit
 			while(true){
 				String[] parts = controlSocket.recvStr().split(" ");
-				if (parts[1].equals(CTRL_CMD_EXIT)) {
+				if (parts[1].equals(Util.CTRL_CMD_EXIT)) {
 					logger.info("Vertex:{} got control msg:{} on topic:{}.\nVertex:{} will exit.", vId, parts[1], parts[0],vId);
 					break;
 				}
@@ -227,7 +219,7 @@ public class Vertex {
 					count++;
 				
 					//perform bogus operation
-					bogus(processingInterval);
+					Util.bogus(processingInterval);
 
 					if (sink) {
 						// write results to file
@@ -236,7 +228,7 @@ public class Vertex {
 						pw.println(String.format("%s,%d,%d", vId, sample.sampleId(), receiveTs - sourceTs));
 						if (count >= (int) (inputRate * publicationRate * executionTime)) {
 							logger.info("Vertex:{} received all messages count:{}.\nVertex:{} will exit", vId, count,vId);
-							client.create().forPath(String.format("/%s/coord/sink/%s",graphId,vId));
+							client.create().forPath(String.format("/finished/%s/%s",graphId,vId));
 							break;
 						}
 
@@ -256,7 +248,7 @@ public class Vertex {
 				}
 				if (poller.pollin(1)) {//process control command
 					String[] parts=controlSocket.recvStr().split(" ");
-					if(parts[1].equals(CTRL_CMD_EXIT)){
+					if(parts[1].equals(Util.CTRL_CMD_EXIT)){
 						logger.info("Vertex:{} got control msg:{} on topic:{}.\nVertex:{} will exit.",
 								vId,parts[1],parts[0],vId);
 						break;
@@ -271,45 +263,34 @@ public class Vertex {
 	
 	public void cleanup(){
 		if(!cleanupCalled){
-			if (pw!=null){
-				pw.close();
+			try {
+				client.delete().forPath(String.format("/joined/%s/%s",graphId,vId));
+				client.close();
+				if (pw != null) {
+					pw.close();
+				}
+				controlSocket.setLinger(0);
+				controlSocket.close();
+				if (poller != null) {
+					poller.close();
+				}
+				if (subscriberSocket != null) {
+					subscriberSocket.setLinger(0);
+					subscriberSocket.close();
+				}
+				for (ZMQ.Socket sock : publisherSockets.values()) {
+					sock.setLinger(0);
+					sock.close();
+				}
+				context.close();
+				cleanupCalled = true;
+				logger.info("Vertex:{} closed ZMQ sockets and context", vId);
+			} catch (Exception e) {
+				logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
 			}
-			controlSocket.setLinger(0);
-			controlSocket.close();
-			if(poller!=null){
-				poller.close();
-			}
-			if(subscriberSocket!=null){
-				subscriberSocket.setLinger(0);
-				subscriberSocket.close();
-			}
-			for(ZMQ.Socket sock: publisherSockets.values()){
-				sock.setLinger(0);
-				sock.close();
-			}
-			context.close();
-			cleanupCalled=true;
-			logger.info("Vertex:{} closed ZMQ sockets and context",vId);
 		}
 	}
 
-	private void collectStats(long startTs,long endTs){
-		SimpleDateFormat formatter= new SimpleDateFormat("HH:mm:ss");
-		String startTime= formatter.format(new Date(startTs));
-		String endTime= formatter.format(new Date(endTs));
-
-		//collect system utilization metrics 
-		logger.info("Vertex:{} will collect system utilization metrics",vId);
-		String utilStatsFile=String.format("%s/util_%s.csv",logDir,Util.hostName());
-		String command=String.format("sadf -s %s -e %s -U -h -d -- -ur",startTime,endTime);
-		Util.executeCommand(command,utilStatsFile);
-
-		//collect network utilization metrics
-		logger.info("Vertex:{} will collect network utilization metrics",vId);
-		String nwStatsFile=String.format("%s/nw_%s.csv",logDir,Util.hostName());
-		command=String.format("sadf -s %s -e %s -U -h -d -- -n DEV",startTime,endTime);
-		Util.executeCommand(command,nwStatsFile);
-	}
 
 	public static void main(String args[]){
 		if(args.length < 6){
@@ -367,12 +348,4 @@ public class Vertex {
 		v.run();
 	}
 
-	private void bogus(int processingInterval){
-		//fib(22) was benchmarked on BBB and it takes ~1ms on average 
-		if (Util.bogusIterations.containsKey(processingInterval)){
-			for(int i=0; i< Util.bogusIterations.get(processingInterval);i++){
-				Util.fib(22);
-			}
-		}
-	}
 }

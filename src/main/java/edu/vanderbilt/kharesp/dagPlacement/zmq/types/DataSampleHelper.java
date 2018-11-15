@@ -1,4 +1,4 @@
-package edu.vanderbilt.kharesp.zmq.types;
+package edu.vanderbilt.kharesp.dagPlacement.zmq.types;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 

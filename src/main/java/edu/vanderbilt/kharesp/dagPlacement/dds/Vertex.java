@@ -1,9 +1,7 @@
-package edu.vanderbilt.kharesp.dagPlacement;
+package edu.vanderbilt.kharesp.dagPlacement.dds;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
@@ -19,16 +17,14 @@ import com.rti.dds.subscription.DataReader;
 import com.rti.dds.subscription.Subscriber;
 import com.rti.dds.topic.Topic;
 import com.rti.dds.type.builtin.StringDataReader;
-import com.rti.dds.type.builtin.StringDataWriter;
 import com.rti.dds.type.builtin.StringTypeSupport;
 import com.rti.dds.types.DataSample64B;
 import com.rti.dds.types.DataSample64BDataWriter;
 import com.rti.dds.types.DataSample64BTypeSupport;
+import edu.vanderbilt.kharesp.dagPlacement.util.Util;
 
 
 public class Vertex {
-	private static final int DOMAIN_ID=2;
-	
 	private Logger logger;
 	private String graphId;
 	private String vId;
@@ -50,7 +46,6 @@ public class Vertex {
 	private HashMap<String,DataWriter> dataWriters;
 
 	private DomainParticipant participant;
-	private StringDataWriter controlWriter;
 	private StringDataReader controlReader;
 	private Subscriber subscriber;
 	private Publisher publisher;
@@ -59,8 +54,6 @@ public class Vertex {
 	private CountDownLatch sourceLatch;
 	private boolean cleanupCalled;
 	
-	private long startTs;
-	private long endTs;
 	
 	
 	public Vertex(String graphId,String vId,
@@ -97,14 +90,14 @@ public class Vertex {
 
 	private void initialize(ArrayList<String> incomingEdges,ArrayList<String> outgoingEdges) throws Exception {
 		//Create DomainParticipant
-		participant = DomainParticipantFactory.TheParticipantFactory.create_participant(DOMAIN_ID,
+		participant = DomainParticipantFactory.TheParticipantFactory.create_participant(Util.DOMAIN_ID,
 				DomainParticipantFactory.PARTICIPANT_QOS_DEFAULT, null, StatusKind.STATUS_MASK_NONE);
 		if (participant == null) {
 			logger.error("Vertex:{} failed to create DomainParticipant",vId);
 			throw new Exception("create_participant error\n");
 		}
 		
-		logger.debug("Vertex:{} created its DomainParticipant for domain-id:{}",vId,DOMAIN_ID);
+		logger.debug("Vertex:{} created its DomainParticipant for domain-id:{}",vId,Util.DOMAIN_ID);
 
 		//Register type
 		String typeName = DataSample64BTypeSupport.get_type_name();
@@ -138,7 +131,7 @@ public class Vertex {
         }
 
 		// Create Control Topic
-		controlTopic = participant.create_topic(graphId, StringTypeSupport.get_type_name(),
+		controlTopic = participant.create_topic(Util.CONTROL_TOPIC, StringTypeSupport.get_type_name(),
 				DomainParticipant.TOPIC_QOS_DEFAULT, null, StatusKind.STATUS_MASK_NONE);
 		if (controlTopic == null) {
 			logger.error("Vertex:{} failed to create control topic:{}", vId, graphId);
@@ -199,15 +192,6 @@ public class Vertex {
 
 		exitLatch=new CountDownLatch(sinkCount);
 		sourceLatch=new CountDownLatch(vCount);
-		// create controlTopic DataWriter
-		controlWriter = (StringDataWriter) publisher.create_datawriter(controlTopic,
-				Publisher.DATAWRITER_QOS_DEFAULT,
-				null, StatusKind.STATUS_MASK_NONE);
-		if (controlWriter == null) {
-			logger.error("Vertex:{} failed to create Control DataWriter", vId);
-			throw new Exception("create_datawriter error\n");
-		}
-		logger.debug("Vertex:{} created its control DataWriter", vId);
 
 		// create controlTopic DataReader
 		controlReader = (StringDataReader) subscriber.create_datareader(controlTopic, // Topic
@@ -221,9 +205,7 @@ public class Vertex {
 		}
 		logger.debug("Vertex:{} created its control DataReader", vId);
 		
-		// send initialization update
-		controlWriter.write(String.format("vid_%s",vId),InstanceHandle_t.HANDLE_NIL);
-		startTs=System.currentTimeMillis();
+		Util.createZNode(String.format("/joined/%s/%s",graphId,vId));
 	}
 	
 	public void run(){
@@ -245,25 +227,8 @@ public class Vertex {
 		}
 		await();
 		cleanup();
-		collectStats();
 	}
 	
-	private void collectStats(){
-		SimpleDateFormat formatter= new SimpleDateFormat("HH:mm:ss");
-		String startTime= formatter.format(new Date(startTs));
-		String endTime= formatter.format(new Date(endTs));
-
-		//collect system utilization metrics 
-		String utilStatsFile=String.format("%s/util_%s.csv",logDir,Util.hostName());
-		String command=String.format("sadf -s %s -e %s -U -h -d -- -ur",startTime,endTime);
-		Util.executeCommand(command,utilStatsFile);
-
-		//collect network utilization metrics
-		String nwStatsFile=String.format("%s/nw_%s.csv",logDir,Util.hostName());
-		command=String.format("sadf -s %s -e %s -U -h -d -- -n DEV",startTime,endTime);
-		Util.executeCommand(command,nwStatsFile);
-	}
-
 	private void await(){
 		try {
 			if (sink) {
@@ -274,19 +239,16 @@ public class Vertex {
 						receiveCount+=op.count.get();
 					}
 					if (receiveCount>=(int)(inputRate*publicationRate*executionTime)){
-						logger.debug("Vertex:{} receied all messages",vId);
+						logger.debug("Vertex:{} received all messages",vId);
+						Util.createZNode(String.format("/finished/%s/%s",graphId,vId));
 						break;
 					}
 					Thread.sleep(5000);
 				}
-				logger.info("Vertex:{} sent exit control message",vId);
-				controlWriter.write(String.format("sink_%s",vId),InstanceHandle_t.HANDLE_NIL);
-				Thread.sleep(5000);
 				
 			} else {
 				exitLatch.await();
 			}
-			endTs=System.currentTimeMillis();
 		} catch (InterruptedException e) {
 			logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
 		}
@@ -319,6 +281,7 @@ public class Vertex {
 
 	public void cleanup(){
 		if (!cleanupCalled) {
+			Util.deleteZNode(String.format("/joined/%s/%s",graphId,vId));
 			for (Entry<String, DataReader> pair : dataReaders.entrySet()) {
 				subscriber.delete_datareader(pair.getValue());
 				listeners.get(pair.getKey()).close_writer();
