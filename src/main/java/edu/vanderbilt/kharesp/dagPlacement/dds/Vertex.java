@@ -258,6 +258,7 @@ public class Vertex {
 		int sleep_interval=1000/publicationRate;
 		int count = 0;
 		try {
+			logger.info("Vertex:{} Source vertex will wait until it receives start control command", vId);
 			sourceLatch.await();
 			logger.info("Vertex:{} Source vertex will start publishing data...", vId);
 			while (count < publicationRate * executionTime) {

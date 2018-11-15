@@ -58,6 +58,7 @@ public class ControlListener extends DataReaderAdapter {
 	                	if(update.equals(Util.CTRL_CMD_START_PUBLISHING)){
 	                		logger.info("ControlListener:{} got command:{}",listenerId,update);
 	                		sourceLatch.countDown();
+	                		logger.info("ControlListener:{} opened sourceLatch",listenerId);
 	                	}
 	                }
 			 }
