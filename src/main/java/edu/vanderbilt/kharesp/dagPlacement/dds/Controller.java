@@ -41,13 +41,13 @@ public class Controller {
 					Publisher.DATAWRITER_QOS_DEFAULT, null, StatusKind.STATUS_MASK_NONE);
 
 			//wait for all DAGs to initialize
-			startBarrier.wait();
+			startBarrier.waitOnBarrier();
 			controlWriter.write(Util.CTRL_CMD_START_PUBLISHING, InstanceHandle_t.HANDLE_NIL);
 			//wait for all DAGs to finish execution
-			endBarrier.wait();
+			endBarrier.waitOnBarrier();
 			controlWriter.write(Util.CTRL_CMD_EXIT, InstanceHandle_t.HANDLE_NIL);
 			//exit after all vertices have exited
-			exitBarrier.wait();
+			exitBarrier.waitOnBarrier();
 
 			// cleanup
 			client.close();

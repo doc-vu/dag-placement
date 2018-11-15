@@ -26,20 +26,20 @@ public class Controller {
 			pub.bind("tcp://*:5000");
 
 			//wait for all DAGs to initialize
-			startBarrier.wait();
+			startBarrier.waitOnBarrier();
 			pub.send(String.format("%s %s", Util.CONTROL_TOPIC, Util.CTRL_CMD_START_PUBLISHING));
 			//wait for all DAGs to finish execution
-			endBarrier.wait();
+			endBarrier.waitOnBarrier();
 			pub.send(String.format("%s %s", Util.CONTROL_TOPIC, Util.CTRL_CMD_EXIT));
 			//exit after all vertices have exited
-			exitBarrier.wait();
+			exitBarrier.waitOnBarrier();
 
 			// cleanup
 			client.close();
 			pub.setLinger(0);
 			pub.close();
 			context.close();
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
