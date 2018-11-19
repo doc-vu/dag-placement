@@ -190,8 +190,8 @@ public class Vertex {
         	logger.debug("Vertex:{} is a Sink vertex", vId);
         }
 
-		exitLatch=new CountDownLatch(sinkCount);
-		sourceLatch=new CountDownLatch(vCount);
+		exitLatch=new CountDownLatch(1);
+		sourceLatch=new CountDownLatch(1);
 
 		// create controlTopic DataReader
 		controlReader = (StringDataReader) subscriber.create_datareader(controlTopic, // Topic

@@ -23,7 +23,10 @@ def process_util(log_dir):
    
     avg_cpu=np.mean(data['user'] + data['sys'])
     avg_iowait=np.mean(data['iowait'])
-    avg_mem=((497328-np.mean(data['free']+data['buffer']+data['cached']))*100)/497328
+    if hostname=='manager':
+      avg_mem=((8166916-np.mean(data['free']+data['buffer']+data['cached']))*100)/8166916
+    else:
+      avg_mem=((497328-np.mean(data['free']+data['buffer']+data['cached']))*100)/497328
    
     host_util_map[hostname]= {'cpu':avg_cpu,\
       'iowait':avg_iowait,\
@@ -45,7 +48,10 @@ def process_nw(log_dir):
     #extract host name from file name
     hostname=f.rpartition('/')[2].split('_')[1].split('.')[0]
     data=pd.read_csv(f,delimiter=';',header=None,skiprows=1)
-    idx=data.columns[(data=='eth0').all()][0]
+    if hostname=='manager':
+      idx=data.columns[(data=='enp5s0f1').all()][0]
+    else:
+      idx=data.columns[(data=='eth0').all()][0]
    
     #add average network usage to host mapping- rxkB/s+txkB/s
     host_nw_map[hostname]=np.mean(data.iloc[:,idx+3]+data.iloc[:,idx+4])
