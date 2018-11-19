@@ -219,7 +219,9 @@ public class Vertex {
 					count++;
 				
 					//perform bogus operation
-					Util.bogus(processingInterval);
+					if (processingInterval>0){
+						Util.bogus(processingInterval);
+					}
 
 					if (sink) {
 						// write results to file
@@ -293,19 +295,15 @@ public class Vertex {
 
 
 	public static void main(String args[]){
-		if(args.length < 6){
-			System.out.println("Vertex graphId,vertex_descriptor_string,publicationRate,executionTime,logDir,processingInterval");
+		if(args.length < 4){
+			System.out.println("Vertex graphId,vertex_descriptor_string,executionTime,logDir");
 			return;
 		}
 		String graphId=args[0];
 		String vertex_descriptor_string=args[1].replace("\\", "");
 		String[] parts= vertex_descriptor_string.split(";");
-		System.out.println(args[0]);
-		System.out.println(vertex_descriptor_string);
-		int publicationRate=Integer.parseInt(args[2]);
-		int executionTime=Integer.parseInt(args[3]);
-		String logDir=args[4];
-		int processingInterval=Integer.parseInt(args[5]);
+		int executionTime=Integer.parseInt(args[2]);
+		String logDir=args[3];
 		
 		//parse the vertex_descriptor_string
 		String vId=parts[0];
@@ -330,6 +328,8 @@ public class Vertex {
 		int sinkCount=Integer.parseInt(parts[5]);
 		int sourceCount=Integer.parseInt(parts[6]);
 		int vCount=Integer.parseInt(parts[7]);
+		int publicationRate=Integer.parseInt(parts[8]);
+		int processingInterval=Integer.parseInt(parts[9]);
 		
 		Vertex v= new Vertex(graphId,vId,
 				subscriptionTopics,publicationTopics,

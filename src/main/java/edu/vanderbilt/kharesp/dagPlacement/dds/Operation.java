@@ -97,21 +97,9 @@ public class Operation extends DataReaderAdapter{
                 	count.incrementAndGet();
                 	DataSample64B sample=dataSeq.get(i);
                 	//Perform bogus operation
-                	//if (!sink){
                 	if (processingInterval>0){
-                      	//long currTime=System.currentTimeMillis();
-                		//while(true){
-                		//	long newTime=System.currentTimeMillis();
-                		//	if ((newTime-currTime)>executionInterval){
-                		//		break;
-                		//	}
-                		//}
-
-                		//Process p = Runtime.getRuntime().exec(String.format("stress-ng --cpu 1 --cpu-method gray --cpu-ops %d",executionInterval));
-                		//p.waitFor();
                 		Util.bogus(processingInterval);
                 	}
-                	//}
                 	if(count.get()%100==0){
                 		logger.debug("DataReaderListener:{} sample count:{}",listenerId,count);
                 	}
@@ -130,12 +118,8 @@ public class Operation extends DataReaderAdapter{
             }
         } catch (RETCODE_NO_DATA noData) {
 
-        } /*
-		catch (IOException e) {
-        	logger.error("DataReaderListener:{} caught exception:{}",listenerId,e.getMessage());
-		} catch (InterruptedException e) {
-        	logger.error("DataReaderListener:{} caught exception:{}",listenerId,e.getMessage());
-		} */finally {
+        } 
+		{
             dr.return_loan(dataSeq, infoSeq);
         }
 	}
