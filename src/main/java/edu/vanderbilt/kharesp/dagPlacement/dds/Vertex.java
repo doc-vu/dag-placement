@@ -34,9 +34,7 @@ public class Vertex {
 	private float inputRate;
 	private int publicationRate;
 	private int executionTime;
-	private int sinkCount;
 	private int processingInterval;
-	private int vCount;
 	private String logDir;
 
 	private HashMap<String,Topic> subscribingTopics;
@@ -69,8 +67,9 @@ public class Vertex {
 		this.inputRate=inputRate;
 		this.publicationRate=publicationRate;
 		this.executionTime=executionTime;
-		this.sinkCount=sinkCount;
-		this.vCount=vCount;
+		//this.sinkCount=sinkCount;
+		//this.sourceCount=sourceCount;
+		//this.vCount=vCount;
 		this.cleanupCalled=false;
 		this.logDir=logDir;
 		this.processingInterval=processingInterval;
@@ -89,6 +88,14 @@ public class Vertex {
 	}
 
 	private void initialize(ArrayList<String> incomingEdges,ArrayList<String> outgoingEdges) throws Exception {
+        if (incomingEdges.size()==0){
+        	source=true;
+        	logger.info("Vertex:{} is a Source vertex", vId);
+        }
+        if (outgoingEdges.size()==0){
+        	sink=true;
+        	logger.info("Vertex:{} is a Sink vertex", vId);
+        }
 		//Create DomainParticipant
 		participant = DomainParticipantFactory.TheParticipantFactory.create_participant(Util.DOMAIN_ID,
 				DomainParticipantFactory.PARTICIPANT_QOS_DEFAULT, null, StatusKind.STATUS_MASK_NONE);
@@ -137,7 +144,7 @@ public class Vertex {
 			logger.error("Vertex:{} failed to create control topic:{}", vId, graphId);
 			throw new Exception("create_topic error\n");
 		}
-        logger.debug("Vertex:{} created control topic:{}",vId,graphId);
+        logger.debug("Vertex:{} created control topic:{}",vId,Util.CONTROL_TOPIC);
         
         //Create Subscriber
 		subscriber = participant.create_subscriber(DomainParticipant.SUBSCRIBER_QOS_DEFAULT, null,
@@ -181,17 +188,9 @@ public class Vertex {
 			logger.debug("Vertex:{} created DataWriter for publication topic:{}", vId, pair.getKey());
 		}
 
-        if (incomingEdges.size()==0){
-        	source=true;
-        	logger.debug("Vertex:{} is a Source vertex", vId);
-        }
-        if (outgoingEdges.size()==0){
-        	sink=true;
-        	logger.debug("Vertex:{} is a Sink vertex", vId);
-        }
 
-		exitLatch=new CountDownLatch(sinkCount);
-		sourceLatch=new CountDownLatch(vCount);
+		exitLatch=new CountDownLatch(1);
+		sourceLatch=new CountDownLatch(1);
 
 		// create controlTopic DataReader
 		controlReader = (StringDataReader) subscriber.create_datareader(controlTopic, // Topic
@@ -206,9 +205,11 @@ public class Vertex {
 		logger.debug("Vertex:{} created its control DataReader", vId);
 		
 		Util.createZNode(String.format("/joined/%s/%s",graphId,vId));
+		logger.info("Vertex:{} initialized", vId);
 	}
 	
 	public void run(){
+		logger.info("Vertex:{} will start execution",vId);
 		if (source){//If it is a source vertex, start publishing data
 			publish();
 		}else{//Otherwise register listeners for incoming data
@@ -227,31 +228,6 @@ public class Vertex {
 		}
 		await();
 		cleanup();
-	}
-	
-	private void await(){
-		try {
-			if (sink) {
-				//poll all DataReaderListeners receive counts
-				while(true){
-					int receiveCount=0;
-					for(Operation op: listeners.values()){
-						receiveCount+=op.count.get();
-					}
-					if (receiveCount>=(int)(inputRate*publicationRate*executionTime)){
-						logger.debug("Vertex:{} received all messages",vId);
-						Util.createZNode(String.format("/finished/%s/%s",graphId,vId));
-						break;
-					}
-					Thread.sleep(5000);
-				}
-				
-			} else {
-				exitLatch.await();
-			}
-		} catch (InterruptedException e) {
-			logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
-		}
 	}
 
 	private void publish(){
@@ -280,9 +256,34 @@ public class Vertex {
 		}
 	}
 
+	private void await(){
+		try {
+			if (sink) {
+				//poll all DataReaderListeners receive counts
+				while(true){
+					int receiveCount=0;
+					for(Operation op: listeners.values()){
+						receiveCount+=op.count.get();
+					}
+					if (receiveCount>=(int)(inputRate*publicationRate*executionTime)){
+						logger.info("Vertex:{} received all messages",vId);
+						Util.createZNode(String.format("/finished/%s/%s",graphId,vId));
+						break;
+					}
+					Thread.sleep(5000);
+				}
+				
+			} else {
+				exitLatch.await();
+			}
+		} catch (InterruptedException e) {
+			logger.error("Vertex:{} caught exception:{}",vId,e.getMessage());
+		}
+	}
+
 	public void cleanup(){
 		if (!cleanupCalled) {
-			Util.deleteZNode(String.format("/joined/%s/%s",graphId,vId));
+			Util.createZNode(String.format("/exited/%s/%s",graphId,vId));
 			for (Entry<String, DataReader> pair : dataReaders.entrySet()) {
 				subscriber.delete_datareader(pair.getValue());
 				listeners.get(pair.getKey()).close_writer();
@@ -293,6 +294,7 @@ public class Vertex {
 			}
 			DomainParticipantFactory.finalize_instance();
 			cleanupCalled=true;
+			logger.info("Vetex:{} has exited",vId);
 		}
 	}
 	

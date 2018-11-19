@@ -134,15 +134,4 @@ public class Util {
 		}
 	}
 	
-	public static void deleteZNode(String path){
-		try {
-			CuratorFramework client = CuratorFrameworkFactory.newClient(ZK_CONNECTOR,
-					new ExponentialBackoffRetry(1000, 3));
-			client.start();
-			client.delete().forPath(path);
-			client.close();
-		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
-		}
-	}
 }

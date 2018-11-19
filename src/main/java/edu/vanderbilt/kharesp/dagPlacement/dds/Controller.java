@@ -40,14 +40,16 @@ public class Controller {
 			StringDataWriter controlWriter = (StringDataWriter) publisher.create_datawriter(controlTopic,
 					Publisher.DATAWRITER_QOS_DEFAULT, null, StatusKind.STATUS_MASK_NONE);
 
+			System.out.println("Controller will wait for all DAGs to initialize");
 			//wait for all DAGs to initialize
 			startBarrier.waitOnBarrier();
+			System.out.println("All DAGs have initialized. Opening start barrier");
 			controlWriter.write(Util.CTRL_CMD_START_PUBLISHING, InstanceHandle_t.HANDLE_NIL);
 			//wait for all DAGs to finish execution
+			System.out.println("Controller will wait for all DAGs to finish execution");
 			endBarrier.waitOnBarrier();
+			System.out.println("All DAGs have finished execution.Opening end barrier");
 			controlWriter.write(Util.CTRL_CMD_EXIT, InstanceHandle_t.HANDLE_NIL);
-			//exit after all vertices have exited
-			exitBarrier.waitOnBarrier();
 
 			// cleanup
 			client.close();

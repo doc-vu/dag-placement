@@ -264,7 +264,7 @@ public class Vertex {
 	public void cleanup(){
 		if(!cleanupCalled){
 			try {
-				client.delete().forPath(String.format("/joined/%s/%s",graphId,vId));
+				client.create().forPath(String.format("/exited/%s/%s",graphId,vId));
 				client.close();
 				if (pw != null) {
 					pw.close();
