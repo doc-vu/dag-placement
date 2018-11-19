@@ -8,13 +8,11 @@ import latency,util
 
 class Experiment(object):
   def __init__(self,zk_connector,config_dir,remote_log_dir,local_log_dir,\
-    publication_rate,processing_interval,execution_time,zmq):
+    execution_time,zmq):
     #stash experiment parameters
     self._config_dir=config_dir
     self._remote_log_dir=remote_log_dir
     self._local_log_dir=local_log_dir
-    self._publication_rate=publication_rate
-    self._processing_interval=processing_interval
     self._execution_time=execution_time
     self._zmq=zmq
     self._localhost_log_dir='/home/shweta/log'
@@ -73,8 +71,8 @@ class Experiment(object):
           parts=vertex_description.rstrip().split(';')
           self.nodes.add(parts[0])
           if graph_id not in self.dags:
-            self.dags[graph_id]={'vertices': int(parts[-1]),
-              'sinks':int(parts[-3])}
+            self.dags[graph_id]={'vertices': int(parts[8]),
+              'sinks':int(parts[6])}
     print(self.dags)
 
   def configure_zk(self):
@@ -94,7 +92,7 @@ class Experiment(object):
     self.start_barrier=Barrier(client=self._zk,path='/barriers/start')
     self.end_barrier=Barrier(client=self._zk,path='/barriers/end')
 
-    #create graph_ids under /joined and /finished
+    #create graph_ids under /joined,/finished and /exited
     for graph_id in self.dags.keys():
       self._zk.ensure_path('/joined/%s'%(graph_id))
       self._zk.ensure_path('/exited/%s'%(graph_id))
@@ -169,16 +167,12 @@ class Experiment(object):
               '--limit',node,\
               "--extra-vars=graph_id=%s \
               vertex_description='%s' \
-              publication_rate=%d \
               execution_interval=%d \
               log_dir=%s \
-              processing_interval=%d \
               zmq=%d"%(graph_id,\
               re.escape(vertex_description.strip()),\
-              self._publication_rate,\
               self._execution_time,\
               '%s/%s'%(self._remote_log_dir,graph_id),\
-              self._processing_interval,\
               self._zmq)])
           else:
             subprocess.check_call(['ansible-playbook','playbooks/vertex.yml',\
@@ -187,16 +181,12 @@ class Experiment(object):
               "--extra-vars=graph_id=%s \
               vertex_description='%s' \
               scripts_dir='/home/shweta/workspace/research/dag-placement/scripts/remote' \
-              publication_rate=%d \
               execution_interval=%d \
               log_dir=%s \
-              processing_interval=%d \
               zmq=%d"%(graph_id,\
               re.escape(vertex_description.strip()),\
-              self._publication_rate,\
               self._execution_time,\
               '%s/%s'%(self._localhost_log_dir,graph_id),\
-              self._processing_interval,\
               self._zmq)])
 
   def sysstat(self):
@@ -250,17 +240,3 @@ class Experiment(object):
   def cleanup(self):
     self.controller.wait()
     self._zk.stop()
-    
-if __name__=="__main__":
-  processing_intervals=[10]
-  publication_rates=[1]
-  for config in range(10,15):
-    for proc in processing_intervals:
-      for rate in publication_rates:
-        if not os.path.exists('/home/shweta/workspace/research/dag-placement/log/manual-configurations/data/config%d/p%d/r%d'%(config,proc,rate)):
-          os.makedirs('/home/shweta/workspace/research/dag-placement/log/manual-configurations/data/config%d/p%d/r%d'%(config,proc,rate))
-
-        Experiment('129.59.105.159:2181',
-          '/home/shweta/workspace/research/dag-placement/log/manual-configurations/configurations/config%d'%(config),
-          '/home/riaps/workspace/dag-placement/log',
-          '/home/shweta/workspace/research/dag-placement/log/manual-configurations/data/config%d/p%d/r%d'%(config,proc,rate),rate,proc,300,False).run()

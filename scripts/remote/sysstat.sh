@@ -8,8 +8,8 @@ log_dir=$1
 start_ts=$2
 end_ts=$3
 
-cd /home/riaps/workspace/dag-placement
+cd /home/shweta/workspace/research/dag-placement
 
 source ~/.profile
 
-java  -cp dag-placement.jar edu.vanderbilt.kharesp.dagPlacement.util.Sysstat $log_dir $start_ts $end_ts
+java  -cp build/libs/dag-placement.jar edu.vanderbilt.kharesp.dagPlacement.util.Sysstat $log_dir $start_ts $end_ts

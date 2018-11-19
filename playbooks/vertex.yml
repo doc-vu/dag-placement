@@ -9,9 +9,9 @@
     - name: print mode of operation
       debug: msg={{ detachedMode }}
     - name: start vertex (attached)
-      shell: '{{ scripts_dir }}/run_vertex.sh {{ graph_id }} {{ vertex_description }} {{ publication_rate }} {{ execution_interval }} {{ log_dir}} {{ processing_interval }} {{ zmq }}'
+      shell: '{{ scripts_dir }}/run_vertex.sh {{ graph_id }} {{ vertex_description }}  {{ execution_interval }} {{ log_dir}}  {{ zmq }}'
       when: not {{ detachedMode | bool }}
 
     - name: start vertex (detached)
-      shell: 'nohup {{ scripts_dir }}/run_vertex.sh {{ graph_id }} "{{ vertex_description }}" {{ publication_rate }} {{ execution_interval }} {{ log_dir}} {{ processing_interval }} {{ zmq }} &'
+      shell: 'nohup {{ scripts_dir }}/run_vertex.sh {{ graph_id }} "{{ vertex_description }}"  {{ execution_interval }} {{ log_dir}}  {{ zmq }} &'
       when: detachedMode
