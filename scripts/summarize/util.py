@@ -15,19 +15,24 @@ def process_util(log_dir):
     print(f)
     #extract host name from file name
     hostname=f.rpartition('/')[2].split('_')[1].split('.')[0]
-    data=pd.read_csv(f,delimiter=';',\
-      names=['hostname','interval','timestamp',\
-      'cpu','user','nice','sys','iowait','steal','idle',\
-      'free','used','per','buffer','cached','commit','%commit',\
-      'active','inactive','dirty'],skiprows=1)
+   
+    if hostname=='manager':
+      data=pd.read_csv(f,delimiter=';',\
+        names=['hostname','interval','timestamp',\
+        'cpu','user','nice','sys','iowait','steal','idle',\
+        'free','available','used','per','buffer','cached','commit','%commit',\
+        'active','inactive','dirty'],skiprows=1)
+      avg_mem=((8166916-np.mean(data['free']+data['buffer']+data['cached']))*100)/8166916
+    else:
+      data=pd.read_csv(f,delimiter=';',\
+        names=['hostname','interval','timestamp',\
+        'cpu','user','nice','sys','iowait','steal','idle',\
+        'free','used','per','buffer','cached','commit','%commit',\
+        'active','inactive','dirty'],skiprows=1)
+      avg_mem=((497328-np.mean(data['free']+data['buffer']+data['cached']))*100)/497328
    
     avg_cpu=np.mean(data['user'] + data['sys'])
     avg_iowait=np.mean(data['iowait'])
-    if hostname=='manager':
-      avg_mem=((8166916-np.mean(data['free']+data['buffer']+data['cached']))*100)/8166916
-    else:
-      avg_mem=((497328-np.mean(data['free']+data['buffer']+data['cached']))*100)/497328
-   
     host_util_map[hostname]= {'cpu':avg_cpu,\
       'iowait':avg_iowait,\
       'mem':avg_mem} 
