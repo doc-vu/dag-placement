@@ -19,8 +19,6 @@ import edu.vanderbilt.kharesp.dagPlacement.zmq.types.DataSample;
 import edu.vanderbilt.kharesp.dagPlacement.zmq.types.DataSampleHelper;
 
 public class Vertex {
-	public static final String ZK_CONNECTOR="129.59.105.159:2181";
-
 	private Logger logger;
 
 	private String graphId;
@@ -51,7 +49,7 @@ public class Vertex {
 			ArrayList<String> incomingEdges,ArrayList<String> outgoingEdges,
 			float selectivity,float inputRate,
 			int sinkCount,int sourceCount,int vCount,
-			int publicationRate,int executionTime,String logDir,int processingInterval){
+			int publicationRate,int executionTime,String logDir,int processingInterval,String zkConnector){
 	
 		logger= LogManager.getLogger(this.getClass().getSimpleName());
 		this.graphId=graphId;
@@ -70,7 +68,7 @@ public class Vertex {
 		sink=false;
 		cleanupCalled=false;
 		//initialize curator client for ZK connection
-		client=CuratorFrameworkFactory.newClient(ZK_CONNECTOR,
+		client=CuratorFrameworkFactory.newClient(zkConnector,
 						new ExponentialBackoffRetry(1000, 3));
 		client.start();
 		
@@ -295,8 +293,8 @@ public class Vertex {
 
 
 	public static void main(String args[]){
-		if(args.length < 4){
-			System.out.println("Vertex graphId,vertex_descriptor_string,executionTime,logDir");
+		if(args.length < 5){
+			System.out.println("Vertex graphId,vertex_descriptor_string,executionTime,logDir,zkConnector");
 			return;
 		}
 		String graphId=args[0];
@@ -304,6 +302,7 @@ public class Vertex {
 		String[] parts= vertex_descriptor_string.split(";");
 		int executionTime=Integer.parseInt(args[2]);
 		String logDir=args[3];
+		String zkConnector=args[4];
 		
 		//parse the vertex_descriptor_string
 		String vId=parts[0];
@@ -335,7 +334,8 @@ public class Vertex {
 				subscriptionTopics,publicationTopics,
 				selectivity,inputRate,
 				sinkCount,sourceCount,vCount,
-				publicationRate,executionTime,logDir,processingInterval);
+				publicationRate,executionTime,
+				logDir,processingInterval,zkConnector);
 
 		//install hook to handle SIGTERM and SIGINT
 		Runtime.getRuntime().addShutdownHook(new Thread() {

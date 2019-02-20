@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,6 +42,7 @@ public class Operation extends DataReaderAdapter{
 
 	public AtomicInteger count;
 	private PrintWriter pw;
+	private ArrayList<String> buffer;
 	
 	public Operation(String graphId,
 			String listenerId,
@@ -74,6 +76,7 @@ public class Operation extends DataReaderAdapter{
 			if (sink) {
 				pw = new PrintWriter(String.format("%s/%s.csv",
 						logDir, listenerId));
+				buffer=new ArrayList<String>();
 			}
 		} catch (FileNotFoundException e) {
 			logger.error("DataReaderListener:{} caught exception:{}",listenerId,e.getMessage());
@@ -107,7 +110,8 @@ public class Operation extends DataReaderAdapter{
 						if (sink) {
 							long receive_ts = System.currentTimeMillis();
 							long source_ts = sample.ts_milisec;
-							pw.println(String.format("%s,%d,%d", listenerId, sample.sample_id, receive_ts - source_ts));
+							//pw.println(String.format("%s,%d,%d", listenerId, sample.sample_id, receive_ts - source_ts));
+							buffer.add(String.format("%s,%d,%d", listenerId, sample.sample_id, receive_ts - source_ts));
 						} else {
 							for (DataWriter dw : dataWriters.values()) {
 								((DataSample64BDataWriter) dw).write(sample, InstanceHandle_t.HANDLE_NIL);
@@ -125,9 +129,19 @@ public class Operation extends DataReaderAdapter{
 	}
 	
 
+	public void write_buffer() {
+		if (sink) {
+			for (String s : buffer) {
+				pw.println(s);
+			}
+			buffer.clear();
+		}
+	}
+
 	public void close_writer(){
 		if (sink){
 			pw.close();
 		}
 	}
+
 }

@@ -24,11 +24,19 @@ def process_util(log_dir):
         'active','inactive','dirty'],skiprows=1)
       avg_mem=((8166916-np.mean(data['free']+data['buffer']+data['cached']))*100)/8166916
     else:
-      data=pd.read_csv(f,delimiter=';',\
-        names=['hostname','interval','timestamp',\
+      if hostname in ['bbb-6302','bbb-7d6a','bbb-5eb7']:
+        column_names=['hostname','interval','timestamp',\
         'cpu','user','nice','sys','iowait','steal','idle',\
         'free','used','per','buffer','cached','commit','%commit',\
-        'active','inactive','dirty'],skiprows=1)
+        'active','inactive','dirty']
+      elif hostname in ['bbb-a702','bbb-ed97','bbb-bce4','bbb-bcf6','bbb-95f9']:
+        column_names=['hostname','interval','timestamp',\
+        'cpu','user','nice','sys','iowait','steal','idle',\
+        'free','available','used','per','buffer','cached','commit','%commit',\
+        'active','inactive','dirty']
+
+      data=pd.read_csv(f,delimiter=';',\
+        names=column_names,skiprows=1)
       avg_mem=((497328-np.mean(data['free']+data['buffer']+data['cached']))*100)/497328
    
     avg_cpu=np.mean(data['user'] + data['sys'])

@@ -5,12 +5,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.rti.dds.domain.DomainParticipant;
 import com.rti.dds.domain.DomainParticipantFactory;
+import com.rti.dds.domain.DomainParticipantQos;
 import com.rti.dds.infrastructure.InstanceHandle_t;
 import com.rti.dds.infrastructure.StatusKind;
+import com.rti.dds.infrastructure.TransportBuiltinKind;
 import com.rti.dds.publication.DataWriter;
 import com.rti.dds.publication.Publisher;
 import com.rti.dds.subscription.DataReader;
@@ -21,6 +24,7 @@ import com.rti.dds.type.builtin.StringTypeSupport;
 import com.rti.dds.types.DataSample64B;
 import com.rti.dds.types.DataSample64BDataWriter;
 import com.rti.dds.types.DataSample64BTypeSupport;
+import com.rti.ndds.Utility;
 import edu.vanderbilt.kharesp.dagPlacement.util.Util;
 
 
@@ -34,8 +38,11 @@ public class Vertex {
 	private float inputRate;
 	private int publicationRate;
 	private int executionTime;
-	private int processingInterval;
 	private String logDir;
+	private int processingInterval;
+	private String zkConnector;
+	private int domainId;
+
 
 	private HashMap<String,Topic> subscribingTopics;
 	private HashMap<String,DataReader> dataReaders;
@@ -57,7 +64,8 @@ public class Vertex {
 	public Vertex(String graphId,String vId,
 			ArrayList<String> incomingEdges,ArrayList<String> outgoingEdges,
 			float selectivity,float inputRate,int sinkCount,int sourceCount,int vCount,
-			int publicationRate,int executionTime,String logDir,int processingInterval) throws Exception{
+			int publicationRate,int executionTime,String logDir,int processingInterval,String zkConnector,int domainId) throws Exception{
+
 		logger= LogManager.getLogger(this.getClass().getSimpleName());
 		this.graphId=graphId;
 		this.vId=vId;
@@ -73,6 +81,8 @@ public class Vertex {
 		this.cleanupCalled=false;
 		this.logDir=logDir;
 		this.processingInterval=processingInterval;
+		this.zkConnector=zkConnector;
+		this.domainId=domainId;
 
 		subscribingTopics=new HashMap<String,Topic>();
 		dataReaders=new HashMap<String,DataReader>();
@@ -97,14 +107,15 @@ public class Vertex {
         	logger.info("Vertex:{} is a Sink vertex", vId);
         }
 		//Create DomainParticipant
-		participant = DomainParticipantFactory.TheParticipantFactory.create_participant(Util.DOMAIN_ID,
+		participant = DomainParticipantFactory.TheParticipantFactory.create_participant(domainId,
 				DomainParticipantFactory.PARTICIPANT_QOS_DEFAULT, null, StatusKind.STATUS_MASK_NONE);
 		if (participant == null) {
 			logger.error("Vertex:{} failed to create DomainParticipant",vId);
 			throw new Exception("create_participant error\n");
 		}
+		DomainParticipantQos qos=new DomainParticipantQos();
 		
-		logger.debug("Vertex:{} created its DomainParticipant for domain-id:{}",vId,Util.DOMAIN_ID);
+		logger.debug("Vertex:{} created its DomainParticipant for domain-id:{}",vId,domainId);
 
 		//Register type
 		String typeName = DataSample64BTypeSupport.get_type_name();
@@ -203,15 +214,16 @@ public class Vertex {
 			throw new Exception("create_datareader error\n");
 		}
 		logger.debug("Vertex:{} created its control DataReader", vId);
-		
-		Util.createZNode(String.format("/joined/%s/%s",graphId,vId));
+	
+		// create ZNode to signify this vertex has initialized
+		Util.createZNode(zkConnector,String.format("/dom%d/joined/%s/%s",domainId,graphId,vId));
 		logger.info("Vertex:{} initialized", vId);
 	}
 	
 	public void run(){
 		logger.info("Vertex:{} will start execution",vId);
 		if (source){//If it is a source vertex, start publishing data
-			publish();
+			publish_sleep();
 		}else{//Otherwise register listeners for incoming data
 			for (Entry<String,DataReader> pair: dataReaders.entrySet()){
 				Operation op=new Operation(graphId,
@@ -229,10 +241,16 @@ public class Vertex {
 		await();
 		cleanup();
 	}
-
-	private void publish(){
-		int sleep_interval=1000/publicationRate;
+	
+	private void publish_spin(){
 		int count = 0;
+		long spinPerUsec=Utility.get_spin_per_microsecond();
+		long spinLoopCount=1000000*spinPerUsec/publicationRate;
+		long lastTime=Util.getTimeUSec();
+		long timeNow=0,timeDelta=0; 
+		double rate=0;
+	
+
 		try {
 			logger.info("Vertex:{} Source vertex will wait until it receives start control command", vId);
 			sourceLatch.await();
@@ -248,8 +266,80 @@ public class Vertex {
 				if (count % 100 == 0) {
 					logger.debug("Vertex:{} published sample:{}", vId, count);
 				}
-				Thread.sleep(sleep_interval);
 				count++;
+				// spin for variable interval of time to maintain given
+				// publication rate
+				timeNow = Util.getTimeUSec();
+				timeDelta = timeNow - lastTime;
+				lastTime = timeNow;
+				rate = 1000000.0 / timeDelta;
+
+				if(rate>publicationRate){
+					spinLoopCount+=spinPerUsec;
+				}else if (rate<publicationRate && spinLoopCount>spinPerUsec){
+					spinLoopCount-=spinPerUsec;
+				}else if (rate<publicationRate && spinLoopCount<=spinPerUsec){
+					spinLoopCount=0;
+				}
+				if(spinLoopCount>0){
+					Utility.spin(spinLoopCount);
+				}
+			}
+		} catch (InterruptedException e) {
+			logger.error("Vertex:{} caught exception:{}", vId, e.getMessage());
+		}
+	}
+
+	private void publish_sleep(){
+		int count = 0;
+		long lastTime=Util.getTimeUSec();
+		long timeNow=0,timeDelta=0; 
+		long sleepNanosec=1000000000/publicationRate;
+		long sleepUsec=1000;
+		double rate=0;
+	
+		boolean useDirectSleepInterval=false;
+		int directSleepInterval=0;
+		if(1000%publicationRate==0){
+			useDirectSleepInterval=true;
+			directSleepInterval=1000000000/publicationRate;
+		}
+
+		try {
+			logger.info("Vertex:{} Source vertex will wait until it receives start control command", vId);
+			sourceLatch.await();
+			logger.info("Vertex:{} Source vertex will start publishing data...", vId);
+			while (count < publicationRate * executionTime) {
+				DataSample64B sample = new DataSample64B();
+				sample.sample_id = count;
+				sample.source_id = 0;
+				sample.ts_milisec = System.currentTimeMillis();
+				for (DataWriter dw : dataWriters.values()) {
+					((DataSample64BDataWriter) dw).write(sample, InstanceHandle_t.HANDLE_NIL);
+				}
+				if (count % 100 == 0) {
+					logger.debug("Vertex:{} published sample:{}", vId, count);
+				}
+				count++;
+				//sleep for variable interval of time to maintain given publication rate
+				if(!useDirectSleepInterval){
+					timeNow = Util.getTimeUSec();
+					timeDelta = timeNow - lastTime;
+					lastTime = timeNow;
+					rate = 1000000.0 / timeDelta;
+					if (rate > publicationRate) {
+						sleepNanosec += sleepUsec; // plus 1 MicroSec
+					} else if (rate < publicationRate && sleepNanosec > sleepUsec) {
+						sleepNanosec -= sleepUsec; // less 1 MicroSec
+					} else if (rate < publicationRate && sleepNanosec <= sleepUsec) {
+						sleepNanosec = 0;
+					}
+					if(sleepNanosec>0){
+						TimeUnit.NANOSECONDS.sleep(sleepNanosec);
+					}
+				}else{
+						TimeUnit.NANOSECONDS.sleep(directSleepInterval);
+				}
 			}
 		} catch (InterruptedException e) {
 			logger.error("Vertex:{} caught exception:{}", vId, e.getMessage());
@@ -267,7 +357,8 @@ public class Vertex {
 					}
 					if (receiveCount>=(int)(inputRate*publicationRate*executionTime)){
 						logger.info("Vertex:{} received all messages",vId);
-						Util.createZNode(String.format("/finished/%s/%s",graphId,vId));
+						//create ZNode to signify this vertex has finished its execution
+						Util.createZNode(zkConnector,String.format("/dom%d/finished/%s/%s",domainId,graphId,vId));
 						break;
 					}
 					Thread.sleep(5000);
@@ -283,9 +374,9 @@ public class Vertex {
 
 	public void cleanup(){
 		if (!cleanupCalled) {
-			Util.createZNode(String.format("/exited/%s/%s",graphId,vId));
 			for (Entry<String, DataReader> pair : dataReaders.entrySet()) {
 				subscriber.delete_datareader(pair.getValue());
+				listeners.get(pair.getKey()).write_buffer();
 				listeners.get(pair.getKey()).close_writer();
 			}
 			if (participant != null) {
@@ -294,14 +385,16 @@ public class Vertex {
 			}
 			DomainParticipantFactory.finalize_instance();
 			cleanupCalled=true;
+			// create Znode to signify this vertex has exited
+			Util.createZNode(zkConnector,String.format("/dom%d/exited/%s/%s",domainId,graphId,vId));
 			logger.info("Vetex:{} has exited",vId);
 		}
 	}
 	
 	
 	public static void main(String args[]) throws Exception{
-		if(args.length < 4){
-			System.out.println("Vertex graphId,vertex_descriptor_string,executionTime,logDir");
+		if(args.length < 6){
+			System.out.println("Vertex graphId,vertex_descriptor_string,executionTime,logDir,zkConnector,domainId");
 			return;
 		}
 		String graphId=args[0];
@@ -312,6 +405,8 @@ public class Vertex {
 		String[] parts= vertex_descriptor_string.split(";");
 		int executionTime=Integer.parseInt(args[2]);
 		String logDir=args[3];
+		String zkConnector=args[4];
+		int domainId=Integer.parseInt(args[5]);
 		
 		//parse the vertex_descriptor_string
 		String vId=parts[0];
@@ -343,7 +438,9 @@ public class Vertex {
 				subscriptionTopics,publicationTopics,
 				selectivity,inputRate,
 				sinkCount,sourceCount,vCount,
-				publicationRate,executionTime,logDir,processingInterval);
+				publicationRate,executionTime,
+				logDir,processingInterval,
+				zkConnector,domainId);
 		//install hook to handle SIGTERM and SIGINT
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override

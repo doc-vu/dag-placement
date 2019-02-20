@@ -8,10 +8,14 @@
   tasks:
     - name: print mode of operation
       debug: msg={{ detachedMode }}
+    - name: print vertices
+      debug: msg={{ map }}
     - name: start vertex (attached)
-      shell: '{{ scripts_dir }}/run_vertex.sh {{ graph_id }} {{ vertex_description }}  {{ execution_interval }} {{ log_dir}}  {{ zmq }}'
+      shell: '{{ scripts_dir }}/run_vertex.sh {{ item.value }}  {{ execution_interval }} {{ log_dir}}  {{ zmq }} {{ zk_connector }} {{ domain_id }}'
       when: not {{ detachedMode | bool }}
+      with_dict: "{{ map }}"
 
     - name: start vertex (detached)
-      shell: 'nohup {{ scripts_dir }}/run_vertex.sh {{ graph_id }} "{{ vertex_description }}"  {{ execution_interval }} {{ log_dir}}  {{ zmq }} &'
+      shell: 'nohup {{ scripts_dir }}/run_vertex.sh "{{ item.value }}"  {{ execution_interval }} {{ log_dir}}  {{ zmq }} {{ zk_connector }} {{ domain_id }} &'
       when: detachedMode
+      with_dict: "{{ map }}"

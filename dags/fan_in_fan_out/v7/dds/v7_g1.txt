@@ -1,0 +1,8 @@
+process;subscription;publication
+v7_g1_v0;;v7_g1_e01
+v7_g1_v1;v7_g1_e01;v7_g1_e12,v7_g1_e13
+v7_g1_v2;v7_g1_e12;v7_g1_e24,v7_g1_e25
+v7_g1_v3;v7_g1_e13;v7_g1_e36
+v7_g1_v4;v7_g1_e24;
+v7_g1_v5;v7_g1_e25;
+v7_g1_v6;v7_g1_e36;

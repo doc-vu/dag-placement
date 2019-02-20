@@ -17,18 +17,25 @@ import edu.vanderbilt.kharesp.dagPlacement.util.Util;
 public class Controller {
 	public static void main(String args[]){
 		try {
+			if(args.length<2){
+				System.out.println("Usage: Controller zkConnector domainId");
+				return;
+			}
+			String zkConnector=args[0];
+			int domainId=Integer.parseInt(args[1]);
+
 			// start connection to ZK
-			CuratorFramework client = CuratorFrameworkFactory.newClient(Util.ZK_CONNECTOR,
+			CuratorFramework client = CuratorFrameworkFactory.newClient(zkConnector,
 					new ExponentialBackoffRetry(1000, 3));
 			client.start();
-			DistributedBarrier startBarrier = new DistributedBarrier(client, "/barriers/start");
-			DistributedBarrier endBarrier = new DistributedBarrier(client, "/barriers/end");
-			DistributedBarrier exitBarrier = new DistributedBarrier(client, "/barriers/exit");
+			DistributedBarrier startBarrier = new DistributedBarrier(client, String.format("/dom%d/barriers/start",domainId));
+			DistributedBarrier endBarrier = new DistributedBarrier(client, String.format("/dom%d/barriers/end",domainId));
+			DistributedBarrier exitBarrier = new DistributedBarrier(client, String.format("/dom%d/barriers/exit",domainId));
 
 			// create control command publisher
 			// create domain participant
 			DomainParticipant participant = DomainParticipantFactory.TheParticipantFactory.create_participant(
-					Util.DOMAIN_ID, DomainParticipantFactory.PARTICIPANT_QOS_DEFAULT, null,
+					domainId, DomainParticipantFactory.PARTICIPANT_QOS_DEFAULT, null,
 					StatusKind.STATUS_MASK_NONE);
 			// create control topic
 			Topic controlTopic = participant.create_topic(Util.CONTROL_TOPIC, StringTypeSupport.get_type_name(),

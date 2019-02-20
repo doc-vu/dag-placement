@@ -31,6 +31,9 @@
                 <durability>
                     <kind>TRANSIENT_LOCAL_DURABILITY_QOS</kind>
                 </durability>
+								<batch>
+									<enable>false</enable>
+								</batch>
             </datawriter_qos>
 
             <!-- QoS used to configure the data reader created in the example code -->                

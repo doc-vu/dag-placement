@@ -1,3 +1,0 @@
-vertex;subscription;publication;selectivity;input_rate;sinks;sources;vertices
-v_2_g_1_v0;;v_2_g_1_e01;1.000000;1.000000;1;1;2
-v_2_g_1_v1;v_2_g_1_e01;;1.000000;1.000000;1;1;2

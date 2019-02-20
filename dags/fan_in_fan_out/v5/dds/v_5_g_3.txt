@@ -1,6 +1,0 @@
-process;subscription;publication
-v_5_g_3_v0;;v_5_g_3_e01,v_5_g_3_e02
-v_5_g_3_v1;v_5_g_3_e01;v_5_g_3_e13
-v_5_g_3_v2;v_5_g_3_e02;v_5_g_3_e24
-v_5_g_3_v3;v_5_g_3_e13;
-v_5_g_3_v4;v_5_g_3_e24;

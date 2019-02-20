@@ -1,9 +1,0 @@
-process;subscription;publication
-v_8_g_5_v0;;v_8_g_5_e01,v_8_g_5_e02
-v_8_g_5_v1;v_8_g_5_e01;v_8_g_5_e13,v_8_g_5_e14
-v_8_g_5_v2;v_8_g_5_e02;v_8_g_5_e25
-v_8_g_5_v3;v_8_g_5_e13;v_8_g_5_e35
-v_8_g_5_v4;v_8_g_5_e14;v_8_g_5_e46
-v_8_g_5_v5;v_8_g_5_e25,v_8_g_5_e35;v_8_g_5_e57
-v_8_g_5_v6;v_8_g_5_e46;
-v_8_g_5_v7;v_8_g_5_e57;

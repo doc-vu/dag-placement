@@ -1,19 +1,21 @@
 import numpy as np
 import random,itertools,argparse
 
+
 def fan_in_fan_out(v,in_deg,out_deg):
   vertices=set()
   v_out_edges={}
-  while len(vertices)<v:
+ 
+  #keep adding vertices until we have added #intermediate vertices + 1 (source) vertices
+  while len(vertices)<v-1:
     current_vertex_count=len(vertices)
-
     if random.uniform(0,1) < .5: #fan-out phase
       #get vertex with minimum number of outgoing edges
       if current_vertex_count>0:
         curr_v=np.argmin([len(v_out_edges[i]) for i in range(current_vertex_count)])
         diff=out_deg-len(v_out_edges[curr_v])
         #add a random number of new vertices 
-        for i in range(min(random.randint(1,diff),v-current_vertex_count)):
+        for i in range(min(random.randint(1,diff),v-1-current_vertex_count)):
           vertices.add(current_vertex_count+i)
           v_out_edges[current_vertex_count+i]=[]
           v_out_edges[curr_v].append(current_vertex_count+i)
@@ -47,11 +49,18 @@ def fan_in_fan_out(v,in_deg,out_deg):
   #sink vertices have a row of all zeros, i.e., no out-going edge
   sink_vertices= np.where(~adj.any(axis=1))[0]
 
-  #ensure that there are no direct edges between source and sink vertices
-  for i in source_vertices:
-    for j in sink_vertices:
-      adj[i][j]=0
+  ##ensure that there are no direct edges between source and sink vertices
+  #for i in source_vertices:
+  #  for j in sink_vertices:
+  #    adj[i][j]=0
+
+  #add links to artificial sink vertex
+  for sink in sink_vertices:
+    if sink!=v-1:
+      adj[sink][v-1]=1
+
   return adj
+
 
 if __name__=="__main__":
   parser=argparse.ArgumentParser(description='creates random fan-in fan-out graph given the number of vertices, maximum in-degree and max out-degree')
@@ -60,4 +69,4 @@ if __name__=="__main__":
   parser.add_argument('-outd',help='maximum out-degree',type=int,required=True)
   args=parser.parse_args()
 
-  print(fan_in_fan_out(args.n,args.ind,args.outd))
+  print(fan_in_fan_out(args.n+2,args.ind,args.outd))

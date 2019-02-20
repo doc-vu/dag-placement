@@ -15,8 +15,8 @@ def latency(log_dir):
     print(f)
     sink_vertex=f.rpartition('/')[2].split('.')[0]
     data=pd.read_csv(f,delimiter=',',names=['vid','sample_id','latency'])
-    #ignore 10% of initial data samples 
-    idx=len(data)//10
+    #ignore 20% of initial data samples 
+    idx=len(data)//5
     latency_avg=np.mean(data[idx:]['latency'])
 
     sorted_latency_vals=np.sort(data[idx:]['latency'])

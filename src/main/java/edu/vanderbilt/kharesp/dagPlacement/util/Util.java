@@ -12,7 +12,6 @@ import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -20,8 +19,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Util {
-	public static final int DOMAIN_ID=1;
-	public static final String ZK_CONNECTOR="129.59.105.159:2181";
 	public static final String CONTROL_TOPIC="DAG_PLACEMENT";
 	public static final String CTRL_CMD_START_PUBLISHING="start";
 	public static final String CTRL_CMD_EXIT="exit";
@@ -122,9 +119,9 @@ public class Util {
 		return fib(n - 1) + fib(n - 2);
 	}
 	
-	public static void createZNode(String path){
+	public static void createZNode(String zkConnector,String path){
 		try {
-			CuratorFramework client = CuratorFrameworkFactory.newClient(ZK_CONNECTOR,
+			CuratorFramework client = CuratorFrameworkFactory.newClient(zkConnector,
 					new ExponentialBackoffRetry(1000, 3));
 			client.start();
 			client.create().forPath(path);
@@ -132,6 +129,10 @@ public class Util {
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 		}
+	}
+	
+	public static long getTimeUSec(){
+		return System.nanoTime()/1000;
 	}
 	
 }

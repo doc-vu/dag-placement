@@ -1,0 +1,9 @@
+process;subscription;publication
+v8_g1_v0;;v8_g1_e01,v8_g1_e02
+v8_g1_v1;v8_g1_e01;v8_g1_e12,v8_g1_e13
+v8_g1_v2;v8_g1_e02,v8_g1_e12;v8_g1_e23,v8_g1_e24
+v8_g1_v3;v8_g1_e13,v8_g1_e23;v8_g1_e34,v8_g1_e35
+v8_g1_v4;v8_g1_e24,v8_g1_e34;v8_g1_e45
+v8_g1_v5;v8_g1_e35,v8_g1_e45;v8_g1_e56,v8_g1_e57
+v8_g1_v6;v8_g1_e56;
+v8_g1_v7;v8_g1_e57;

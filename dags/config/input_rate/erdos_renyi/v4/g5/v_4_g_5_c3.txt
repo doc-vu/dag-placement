@@ -1,5 +1,0 @@
-vertex;subscription;publication;selectivity;input_rate;sinks
-v_4_g_5_v0;v_4_g_5_e10,v_4_g_5_e20;;1.000000;1.500000;1
-v_4_g_5_v1;v_4_g_5_e31;v_4_g_5_e10;1.000000;1.000000;1
-v_4_g_5_v2;v_4_g_5_e32;v_4_g_5_e20;0.500000;1.000000;1
-v_4_g_5_v3;;v_4_g_5_e31,v_4_g_5_e32;1.000000;1.000000;1

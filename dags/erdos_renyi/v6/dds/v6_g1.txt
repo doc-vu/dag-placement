@@ -1,0 +1,7 @@
+process;subscription;publication
+v6_g1_v0;v6_g1_e30;
+v6_g1_v1;v6_g1_e31;
+v6_g1_v2;v6_g1_e32,v6_g1_e42;
+v6_g1_v3;v6_g1_e53;v6_g1_e30,v6_g1_e31,v6_g1_e32
+v6_g1_v4;v6_g1_e54;v6_g1_e42
+v6_g1_v5;;v6_g1_e53,v6_g1_e54

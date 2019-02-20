@@ -1,0 +1,9 @@
+process;subscription;publication
+v8_g1_v0;v8_g1_e10,v8_g1_e60;
+v8_g1_v1;v8_g1_e31;v8_g1_e10
+v8_g1_v2;v8_g1_e32;
+v8_g1_v3;v8_g1_e63;v8_g1_e31,v8_g1_e32
+v8_g1_v4;v8_g1_e54;
+v8_g1_v5;v8_g1_e65;v8_g1_e54
+v8_g1_v6;v8_g1_e76;v8_g1_e60,v8_g1_e63,v8_g1_e65
+v8_g1_v7;;v8_g1_e76

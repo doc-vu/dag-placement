@@ -1,0 +1,15 @@
+---
+- hosts: all
+  serial: 1
+  vars:
+    - log: /home/shweta/workspace/research/dag-placement/offsets.csv
+  tasks:
+    - name: get time offset
+      shell: ntpq -p | awk 'NR==3{print $9}'
+      register: result
+    - name: log time offset
+      lineinfile:
+        line: "{{ inventory_hostname }},{{ result.stdout }}"
+        insertafter: EOF
+        dest: "{{ log }}"
+      delegate_to: 127.0.0.1

@@ -1,0 +1,8 @@
+---
+- hosts: all
+  gather_facts: False
+  vars:
+    - scripts_dir: /home/riaps/workspace/dag-placement/scripts
+  tasks:
+    - name: kill vertices
+      shell: '{{ scripts_dir }}/kill.sh {{ domain_id }}'

@@ -11,8 +11,13 @@ public class Controller {
 	
 	public static void main(String args[]){
 		try {
+			if (args.length<1){
+				System.out.println("Usage: Controller zkConnector");
+				return;
+			}
+			String zkConnector=args[0];
 			//start connection to ZK
-			CuratorFramework client = CuratorFrameworkFactory.newClient(Util.ZK_CONNECTOR,
+			CuratorFramework client = CuratorFrameworkFactory.newClient(zkConnector,
 					new ExponentialBackoffRetry(1000, 3));
 			client.start();
 			DistributedBarrier startBarrier = new DistributedBarrier(client, "/barriers/start");

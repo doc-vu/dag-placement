@@ -1,8 +1,0 @@
-process;subscription;publication
-v_7_g_5_v0;;v_7_g_5_e01
-v_7_g_5_v1;v_7_g_5_e01;v_7_g_5_e12
-v_7_g_5_v2;v_7_g_5_e12;v_7_g_5_e23,v_7_g_5_e24
-v_7_g_5_v3;v_7_g_5_e23;v_7_g_5_e35,v_7_g_5_e36
-v_7_g_5_v4;v_7_g_5_e24;
-v_7_g_5_v5;v_7_g_5_e35;
-v_7_g_5_v6;v_7_g_5_e36;
