@@ -1,21 +1,20 @@
 import os,argparse
 def extract_features(k,count,node,log_dir,start_id):
   with open('%s/features/k%d.csv'%(log_dir,k),'w') as of, open('%s/parameters/k%d'%(log_dir,k),'r') as inf:
-    of.write('tid,fv,fp,fr,bv,bsp,bsr,bsl,cpu,mem,nw,latency_90th\n') #write header
+    #of.write('tid,fv,fp,fr,bv,bsp,bsr,bsl,cpu,mem,nw,latency_90th\n') #write header
+    of.write('tid,fv,fp,fr,bv,bsp,bsr,bsl,latency_90th\n') #write header
     for i in range(start_id-1+ count):
       dags=next(inf).strip().split('/')
       if(i<start_id-1):
         continue
-      if i==94 or i==118 or i==172 or i==328:
-        continue
 
-      #get system utilization metrics for the test run
-      with open('%s/data/k%d/%d/summary/summary_util.csv'%(log_dir,k,i+1),'r') as uf:
-        for line in uf:
-          if line.startswith(node):
-            cpu=line.strip().split(',')[1]
-            mem=line.strip().split(',')[3]
-            nw=line.strip().split(',')[4]
+      ##get system utilization metrics for the test run
+      #with open('%s/data/k%d/%d/summary/summary_util.csv'%(log_dir,k,i+1),'r') as uf:
+      #  for line in uf:
+      #    if line.startswith(node):
+      #      cpu=line.strip().split(',')[1]
+      #      mem=line.strip().split(',')[3]
+      #      nw=line.strip().split(',')[4]
 
       #get latencies for k colocated linear chains
       latencies={}
@@ -48,7 +47,8 @@ def extract_features(k,count,node,log_dir,start_id):
           bsp+=params['g%d'%(gid+1)]['p']
           bsr+=params['g%d'%(gid+1)]['r']
           bsl+=(params['g%d'%(gid+1)]['p']*params['g%d'%(gid+1)]['r'])/1000.0
-        of.write('%d,%d,%d,%d,%d,%d,%d,%f,%s,%s,%s,%s\n'%(i+1,fv,fp,fr,bv,bsp,bsr,bsl,cpu,mem,nw,latencies['g%d'%(curr_gid+1)]))
+        #of.write('%d,%d,%d,%d,%d,%d,%d,%f,%s,%s,%s,%s\n'%(i+1,fv,fp,fr,bv,bsp,bsr,bsl,cpu,mem,nw,latencies['g%d'%(curr_gid+1)]))
+        of.write('%d,%d,%d,%d,%d,%d,%d,%f,%s\n'%(i+1,fv,fp,fr,bv,bsp,bsr,bsl,latencies['g%d'%(curr_gid+1)]))
 
 if __name__=="__main__": 
   parser=argparse.ArgumentParser(description='')

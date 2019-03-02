@@ -93,13 +93,14 @@ class Guarded(object):
       #kill all existing processes
       subprocess.check_call(['ansible-playbook','/home/shweta/workspace/research/dag-placement/playbooks/kill.yml',\
       '--limit',','.join([x for x in self.nodes if x!='localhost']),\
-      "--extra-vars=pattern=Vertex"])
+      '--extra-vars=domain_id=%d'%(self.domain_id)])
     
       if 'localhost' in self.nodes:
         subprocess.check_call(['ansible-playbook','/home/shweta/workspace/research/dag-placement/playbooks/kill.yml',\
           '--limit','localhost',\
           '--connection','local',\
-          '--extra-vars=pattern=Vertex']) 
+          '--extra-vars= scripts_dir=/home/shweta/workspace/research/dag-placement/scripts/remote \
+          domain_id=%d'%(self.domain_id)])
 
       #restart experiment
       if self.experiment_trial<self.max_experiment_trials: 

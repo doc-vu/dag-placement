@@ -28,3 +28,5 @@ then
 else
   java -Dlog4j.configurationFile=log4j2.xml  -cp build/libs/dag-placement.jar edu.vanderbilt.kharesp.dagPlacement.dds.Vertex $graph_id $vertex_description_wo_gid $execution_interval $log_dir/$graph_id/dag $zk_connector $domain_id  1>$log_dir/$graph_id/err/"$vid".log 2>&1
 fi
+
+sleep 10

@@ -1,78 +1,84 @@
 import sys,os,shutil
 sys.path.insert(0, './scripts/benchmarking/execute')
 import guarded
+import numpy as np
 
 
-domain_id=3
+domain_id=1
 zk_connector='129.59.105.159:2181'
 
+#log_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/split/run2'
+#for tid in range(1,4):
+#  print('\n')
+#  number_of_graphs=len(os.listdir('%s/run2/red/%d_1/summary'%(log_dir,tid)))-1
+#  for gid in range(number_of_graphs):
+#    l=[]
+#    for runid in range(1,6):
+#      with open('%s/run%d/red/%d_1/summary/summary_g%d.csv'%(log_dir,runid,tid,gid+1),'r') as f:
+#        next(f)
+#        for line in f:
+#          sink,avg,l90th= line.strip().split(',')
+#          l.append(float(l90th))
+#    #print(l)
+#    print('tid:%d g%d mean:%.2f std:%.2f'%(tid,gid+1,np.mean(l),np.std(l)))
+        
+#for tid in [3]:
+#  config_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/composition/equivalent_structure/%d'%(tid)
+#  #execute experiment
+#  guarded.Guarded(zk_connector=zk_connector,\
+#    config_dir=config_dir,\
+#    remote_log_dir='/home/riaps/workspace/dag-placement/log/%d'%(domain_id),\
+#    local_log_dir=config_dir,\
+#    execution_time=120,domain_id=domain_id).run()
 
-for runid in range(2,6):
-  for tid in range(1,10):
-    config_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run%d/%d'%(runid,tid)
-    log_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run%d/%d'%(runid,tid)
-    
-    #ensure that configuration directory exists
-    if not os.path.exists(config_dir):
-      os.makedirs(config_dir)
-    if not os.path.exists('%s/graphs'%(config_dir)):
-      os.makedirs('%s/graphs'%(config_dir))
-    #copy graph configurations from run1 to current run
-    for file_name in os.listdir('/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run1/%d/graphs'%(tid)):
-      shutil.copy('/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run1/%d/graphs/%s'%(tid,file_name),
-        '/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run%d/%d/graphs/%s'%(runid,tid,file_name))
-    
-    #execute experiment
-    guarded.Guarded(zk_connector=zk_connector,\
-      config_dir=config_dir,\
-      remote_log_dir='/home/riaps/workspace/dag-placement/log/%d'%(domain_id),\
-      local_log_dir=log_dir,\
-      execution_time=120,domain_id=domain_id).run()
-  
-for runid in range(2,6):
-  for tid in range(1,10):
-    for config in range(1,3):
-      config_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run%d/red2/%d_%d'%(runid,tid,config)
-      log_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run%d/red2/%d_%d'%(runid,tid,config)
+#for tid in range(1,6):
+#  config_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/composition/equivalent_structure2/%d'%(tid)
+#  #execute experiment
+#  guarded.Guarded(zk_connector=zk_connector,\
+#    config_dir=config_dir,\
+#    remote_log_dir='/home/riaps/workspace/dag-placement/log/%d'%(domain_id),\
+#    local_log_dir=config_dir,\
+#    execution_time=120,domain_id=domain_id).run()
+#
+for tid in range(5,6):
+  config_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/composition/sub_structure6/%d'%(tid)
+  #execute experiment
+  guarded.Guarded(zk_connector=zk_connector,\
+    config_dir=config_dir,\
+    remote_log_dir='/home/riaps/workspace/dag-placement/log/%d'%(domain_id),\
+    local_log_dir=config_dir,\
+    execution_time=120,domain_id=domain_id).run()
 
-      #ensure that configuration directory exists
-      if not os.path.exists(config_dir):
-        os.makedirs(config_dir)
-      if not os.path.exists('%s/graphs'%(config_dir)):
-        os.makedirs('%s/graphs'%(config_dir))
+#for tid in range(1,6):
+#  config_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/composition/sub_structure2/%d'%(tid)
+#  #execute experiment
+#  guarded.Guarded(zk_connector=zk_connector,\
+#    config_dir=config_dir,\
+#    remote_log_dir='/home/riaps/workspace/dag-placement/log/%d'%(domain_id),\
+#    local_log_dir=config_dir,\
+#    execution_time=120,domain_id=domain_id).run()
 
-      #copy graph configurations from run1 to current run
-      for file_name in os.listdir('/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run1/red2/%d_%d/graphs'%(tid,config)):
-        shutil.copy('/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run1/red2/%d_%d/graphs/%s'%(tid,config,file_name),
-          '/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run%d/red2/%d_%d/graphs/%s'%(runid,tid,config,file_name))
-      
-      #execute experiment
-      guarded.Guarded(zk_connector=zk_connector,\
-        config_dir=config_dir,\
-        remote_log_dir='/home/riaps/workspace/dag-placement/log/%d'%(domain_id),\
-        local_log_dir=log_dir,\
-        execution_time=120,domain_id=domain_id).run()
-
-for runid in range(2,6):
-  for tid in range(1,10):
-    for config in range(1,2):
-      config_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run%d/red1/%d_%d'%(runid,tid,config)
-      log_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run%d/red1/%d_%d'%(runid,tid,config)
-
-      #ensure that configuration directory exists
-      if not os.path.exists(config_dir):
-        os.makedirs(config_dir)
-      if not os.path.exists('%s/graphs'%(config_dir)):
-        os.makedirs('%s/graphs'%(config_dir))
-
-      #copy graph configurations from run1 to current run
-      for file_name in os.listdir('/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run1/red1/%d_%d/graphs'%(tid,config)):
-        shutil.copy('/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run1/red1/%d_%d/graphs/%s'%(tid,config,file_name),
-          '/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/merge/run2/run%d/red1/%d_%d/graphs/%s'%(runid,tid,config,file_name))
-      
-      #execute experiment
-      guarded.Guarded(zk_connector=zk_connector,\
-        config_dir=config_dir,\
-        remote_log_dir='/home/riaps/workspace/dag-placement/log/%d'%(domain_id),\
-        local_log_dir=log_dir,\
-        execution_time=120,domain_id=domain_id).run()
+#for runid in range(1,2):
+#  for tid in range(1,4):
+#    config_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/split/run2/run%d/%d'%(runid,tid)
+#    log_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/split/run2/run%d/%d'%(runid,tid)
+#    
+#    #execute experiment
+#    guarded.Guarded(zk_connector=zk_connector,\
+#      config_dir=config_dir,\
+#      remote_log_dir='/home/riaps/workspace/dag-placement/log/%d'%(domain_id),\
+#      local_log_dir=log_dir,\
+#      execution_time=120,domain_id=domain_id).run()
+#  
+#for runid in range(1,2):
+#  for tid in range(1,4):
+#    for config in range(1,3):
+#      config_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/split/run2/run%d/red/%d_%d'%(runid,tid,config)
+#      log_dir='/home/shweta/workspace/research/dag-placement/log/linear_chain_overhead/structure/split/run2/run%d/red/%d_%d'%(runid,tid,config)
+#
+#      #execute experiment
+#      guarded.Guarded(zk_connector=zk_connector,\
+#        config_dir=config_dir,\
+#        remote_log_dir='/home/riaps/workspace/dag-placement/log/%d'%(domain_id),\
+#        local_log_dir=log_dir,\
+#        execution_time=120,domain_id=domain_id).run()
